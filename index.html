@@ -2,902 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-<title>Flappy Bird Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flappy Bird Enhanced</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
   * {
     box-sizing: border-box;
   }
-  body, html {
-    margin: 0; padding: 0;
-    background: #70c5ce;
-    font-family: 'Press Start 2P', cursive, monospace;
-    height: 100vh;
-    overflow: hidden;
+  body {
+    margin: 0;
+    background: #87CEEB;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow: hidden;
   }
-  #container {
+  #gameContainer {
     position: relative;
-    width: 400px;
-    height: 600px;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,0,0,0.7);
-    background: #70c5ce;
-    display: flex;
-    flex-direction: column;
-    user-select: none;
+    width: 480px;
+    margin: 20px auto;
   }
   canvas {
-    border-radius: 15px;
-    background: transparent;
+    background: #87CEEB;
     display: block;
+    border: 2px solid #000;
+    border-radius: 8px;
   }
-  /* UI Elements */
   #score, #highScore {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 36px;
-    text-shadow: 2px 2px 8px black;
-    user-select: none;
-    z-index: 10;
+    font-size: 20px;
     font-weight: bold;
-    pointer-events: none;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    user-select: none;
   }
   #highScore {
-    top: 50px;
-    font-size: 18px;
+    top: 40px;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+  #achievementPopup {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    display: none;
+    pointer-events: none;
+    user-select: none;
+    z-index: 10;
   }
   #muteBtn {
     position: absolute;
+    right: 12px;
     top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    padding: 6px 12px;
+    font-weight: bold;
+    background: rgba(255,255,255,0.8);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  #gameOverScreen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    font-size: 24px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 22px;
-    color: white;
-    box-shadow: 0 0 5px black;
-    user-select: none;
-    cursor: pointer;
-    z-index: 15;
-    transition: background 0.3s ease;
-  }
-  #muteBtn:hover {
-    background: rgba(0,0,0,0.7);
-  }
-  /* Main Menu */
-  #menu, #gameOverScreen, #settingsPanel, #achievementPopup, #pauseScreen {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7);
-    padding: 30px 40px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.9);
-    color: white;
-    text-align: center;
+    display: none;
+    border-radius: 8px;
     z-index: 20;
-    user-select: none;
   }
-  #menu h1, #gameOverScreen h1, #pauseScreen h1 {
-    font-size: 48px;
-    margin-bottom: 25px;
-    text-shadow: 2px 2px 8px black;
-  }
-  #menu button, #gameOverScreen button, #pauseScreen button {
-    font-family: 'Press Start 2P', cursive, monospace;
-    font-size: 16px;
-    font-weight: bold;
-    padding: 12px 24px;
+  #restartBtn {
+    margin-top: 20px;
+    padding: 10px 24px;
+    font-size: 18px;
+    background: #4CAF50;
     border: none;
-    border-radius: 10px;
-    background: #ffde59;
-    box-shadow: 0 3px #ccbb33;
+    border-radius: 8px;
     cursor: pointer;
     user-select: none;
-    transition: background 0.3s ease;
-    margin: 8px;
+    color: white;
+    font-weight: bold;
   }
-  #menu button:hover, #gameOverScreen button:hover, #pauseScreen button:hover {
-    background: #fff97f;
-  }
-  #settingsPanel {
-    width: 320px;
-    padding: 20px 30px;
-    display: none;
-  }
-  #settingsPanel h2 {
-    margin-bottom: 20px;
-    font-size: 24px;
-  }
-  #settingsPanel label {
-    display: block;
-    margin-bottom: 12px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  #settingsPanel input[type="range"] {
-    width: 100%;
-    margin: 5px 0 20px;
-  }
-  #achievementPopup {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.85);
-    padding: 15px 30px;
-    border-radius: 15px;
-    font-size: 16px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-    max-width: 90%;
-    z-index: 25;
-  }
-  #achievementPopup.show {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  /* Pause Screen */
-  #pauseScreen {
-    display: none;
+  #restartBtn:hover {
+    background: #45a049;
   }
 </style>
 </head>
 <body>
-<div id="container" role="main" aria-label="Flappy Bird game">
-  <canvas id="gameCanvas" width="400" height="600" aria-label="Game canvas"></canvas>
-  <div id="score" aria-live="polite" aria-atomic="true">0</div>
-  <div id="highScore" aria-live="polite" aria-atomic="true">High Score: 0</div>
-  <div id="muteBtn" role="button" aria-pressed="false" tabindex="0" title="Toggle Mute">🔊</div>
-
-  <!-- Main Menu -->
-  <section id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
-    <h1 id="menuTitle">Flappy Bird Ultimate</h1>
-    <button id="startBtn">Start Game</button>
-    <button id="settingsBtn">Settings</button>
-    <p style="font-size:14px; margin-top:10px;">Press Space, Click, or Tap to flap</p>
-  </section>
-
-  <!-- Game Over Screen -->
-  <section id="gameOverScreen" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle" style="display:none;">
-    <h1 id="gameOverTitle">Game Over</h1>
-    <p id="finalScoreText" style="margin: 15px 0; font-size: 18px;"></p>
-    <button id="restartBtn">Restart</button>
-    <button id="goMenuBtn">Main Menu</button>
-  </section>
-
-  <!-- Pause Screen -->
-  <section id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
-    <h1 id="pauseTitle">Paused</h1>
-    <button id="resumeBtn">Resume</button>
-    <button id="goMenuPauseBtn">Main Menu</button>
-  </section>
-
-  <!-- Settings Panel -->
-  <section id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" aria-hidden="true">
-    <h2 id="settingsTitle">Settings</h2>
-    <label for="musicVolume">Music Volume</label>
-    <input type="range" id="musicVolume" min="0" max="1" step="0.05" value="0.15" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0.15"/>
-    <label><input type="checkbox" id="soundToggle" checked /> Sound Effects</label>
-    <label for="difficultySelect">Difficulty</label>
-    <select id="difficultySelect" aria-label="Select difficulty">
-      <option value="easy" selected>Easy</option>
-      <option value="normal">Normal</option>
-      <option value="hard">Hard</option>
-    </select>
-    <button id="closeSettingsBtn" style="margin-top: 20px;">Close Settings</button>
-  </section>
-
-  <!-- Achievement Popup -->
-  <div id="achievementPopup" role="alert" aria-live="assertive" aria-atomic="true"></div>
-</div>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="480" height="640" aria-label="Flappy Bird Game" role="img"></canvas>
+    <div id="score" aria-live="polite">0</div>
+    <div id="highScore" aria-live="polite">High Score: 0</div>
+    <button id="muteBtn" aria-pressed="false" aria-label="Mute or unmute audio">Mute</button>
+    <div id="achievementPopup" role="alert" aria-atomic="true"></div>
+    <div id="gameOverScreen" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle" aria-describedby="finalScoreDesc">
+      <div id="gameOverTitle">Game Over</div>
+      <div id="finalScoreDesc">Your score: <span id="finalScore">0</span></div>
+      <button id="restartBtn">Restart</button>
+    </div>
+  </div>
 
 <script>
 (() => {
-  // === GLOBAL VARIABLES ===
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const WIDTH = canvas.width;
-  const HEIGHT = canvas.height;
-
-  // UI Elements
-  const menu = document.getElementById('menu');
-  const startBtn = document.getElementById('startBtn');
-  const settingsBtn = document.getElementById('settingsBtn');
-  const gameOverScreen = document.getElementById('gameOverScreen');
-  const finalScoreText = document.getElementById('finalScoreText');
-  const restartBtn = document.getElementById('restartBtn');
-  const goMenuBtn = document.getElementById('goMenuBtn');
-  const scoreDisplay = document.getElementById('score');
-  const highScoreDisplay = document.getElementById('highScore');
-  const muteBtn = document.getElementById('muteBtn');
-  const settingsPanel = document.getElementById('settingsPanel');
-  const musicVolumeSlider = document.getElementById('musicVolume');
-  const soundToggleCheckbox = document.getElementById('soundToggle');
-  const difficultySelect = document.getElementById('difficultySelect');
-  const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-  const achievementPopup = document.getElementById('achievementPopup');
-  const pauseScreen = document.getElementById('pauseScreen');
-  const resumeBtn = document.getElementById('resumeBtn');
-  const goMenuPauseBtn = document.getElementById('goMenuPauseBtn');
-
-  // Constants
-  const GRAVITY = 0.6;
-  const PIPE_WIDTH = 52;
-  const PIPE_SPEED_BASE = 2.5;
-  const PIPE_GAP_BASE = 140;
-  const GROUND_HEIGHT = 112;
-  const BIRD_WIDTH = 34;
-  const BIRD_HEIGHT = 24;
-
-  // Game state variables
-  let gameRunning = false;
-  let animationId = null;
-  let pipeIntervalId = null;
-  let pipes = [];
-  let score = 0;
-  let highScore = 0;
-  let difficulty = 'easy';
-  let pipeSpeed = PIPE_SPEED_BASE;
-  let pipeGap = PIPE_GAP_BASE;
-  let achievementsUnlocked = new Set();
-  let powerUps = [];
-  let particles = [];
-  let shieldActive = false;
-  let slowMotionActive = false;
-  let slowMotionTimer = 0;
-
-  // Mute and volume
-  let isMuted = false;
-  let musicVolume = 0.15;
-  let soundOn = true;
-
-  // Time tracking for powerups and difficulty
-  let gameTime = 0;
-
-  // Assets storage
-  const assets = {
-    images: {},
-    sounds: {}
-  };
-
-  // Load assets using promises
-  function loadImage(src) {
-    return new Promise((res, rej) => {
-      const img = new Image();
-      img.onload = () => res(img);
-      img.onerror = () => rej(new Error('Failed to load image ' + src));
-      img.src = src;
-    });
-  }
-  function loadAudio(src, loop = false) {
-    return new Promise((res, rej) => {
-      const audio = new Audio();
-      audio.src = src;
-      audio.loop = loop;
-      audio.volume = musicVolume;
-      audio.oncanplaythrough = () => res(audio);
-      audio.onerror = () => rej(new Error('Failed to load audio ' + src));
-    });
-  }
-
-  // Accessibility helper
-  function announce(text) {
-    // For screen readers: set text in a live region
-    // scoreDisplay has aria-live, so we use that for score announcements only
-    // Use achievementPopup for achievements announcements instead
-  }
-
-  // --- CLASS DEFINITIONS ---
-
-  // Bird class with wing flap animation
-  class Bird {
-    constructor(x, y) {
-      this.x = x;
-      this.y = y;
-      this.width = BIRD_WIDTH;
-      this.height = BIRD_HEIGHT;
-      this.velocity = 0;
-      this.frame = 0;
-      this.frameTick = 0;
-      this.frameSpeed = 5;
-      this.rotation = 0;
-      this.alive = true;
-      this.shield = false;
-      this.shieldAlpha = 0;
-    }
-    flap() {
-      if (!this.alive) return;
-      this.velocity = -9;
-      this.frame = 1;
-      this.frameTick = 0;
-      if (soundOn && !isMuted) playSound('flap');
-      createParticles(this.x + this.width / 2, this.y + this.height);
-    }
-    update() {
-      this.velocity += GRAVITY * (slowMotionActive ? 0.3 : 1);
-      this.y += this.velocity * (slowMotionActive ? 0.3 : 1);
-
-      // Rotate bird up/down smoothly based on velocity
-      this.rotation = Math.min(Math.max(this.velocity / 10, -1.5), 1.5);
-
-      // Animate wing flap frames (0 = wings down, 1 = wings mid, 2 = wings up)
-      this.frameTick++;
-      if (this.frameTick > this.frameSpeed) {
-        this.frame = (this.frame + 1) % 3;
-        this.frameTick = 0;
-      }
-
-      if (this.shield) {
-        this.shieldAlpha += 0.05;
-        if (this.shieldAlpha > 1) this.shieldAlpha = 1;
-      } else {
-        this.shieldAlpha -= 0.05;
-        if (this.shieldAlpha < 0) this.shieldAlpha = 0;
-      }
-
-      // Constrain bird to top and bottom (ground will kill)
-      if (this.y < 0) this.y = 0;
-      if (this.y + this.height > HEIGHT - GROUND_HEIGHT) {
-        this.y = HEIGHT - GROUND_HEIGHT - this.height;
-        this.alive = false;
-        if (!shieldActive) onGameOver();
-        else this.shield = false;
-      }
-    }
-    draw(ctx) {
-      ctx.save();
-      ctx.translate(this.x + this.width/2, this.y + this.height/2);
-      ctx.rotate(this.rotation);
-      // Draw bird body and wing flap animation
-      ctx.fillStyle = '#FFD700';
-      ctx.strokeStyle = '#DAA520';
-      ctx.lineWidth = 2;
-
-      // Draw body
-      ctx.beginPath();
-      ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw wing depending on frame
-      ctx.fillStyle = '#FFA500';
-      const wingOffsets = [-10, -5, 0];
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(wingOffsets[this.frame], -10 - this.frame*4);
-      ctx.lineTo(wingOffsets[this.frame] + 8, -5 - this.frame*2);
-      ctx.closePath();
-      ctx.fill();
-
-      // Shield glow
-      if (this.shieldAlpha > 0) {
-        ctx.shadowColor = `rgba(0, 255, 255, ${this.shieldAlpha})`;
-        ctx.shadowBlur = 15;
-        ctx.strokeStyle = `rgba(0, 255, 255, ${this.shieldAlpha})`;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, this.width/2 + 6, this.height/2 + 6, 0, 0, 2 * Math.PI);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-      }
-
-      ctx.restore();
-    }
-    getBounds() {
-      return {x: this.x, y: this.y, width: this.width, height: this.height};
-    }
-  }
-
-  // Pipe class
-  class Pipe {
-    constructor(x, y, flipped = false) {
-      this.x = x;
-      this.y = y;
-      this.width = PIPE_WIDTH;
-      this.height = 320; // pipe sprite height placeholder
-      this.flipped = flipped;
-      this.passed = false;
-    }
-    update() {
-      this.x -= pipeSpeed * (slowMotionActive ? 0.3 : 1);
-    }
-    draw(ctx) {
-      ctx.fillStyle = '#228B22';
-      ctx.strokeStyle = '#006400';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      if (this.flipped) {
-        // Top pipe (flipped)
-        ctx.moveTo(this.x, this.y + this.height);
-        ctx.lineTo(this.x + this.width, this.y + this.height);
-        ctx.lineTo(this.x + this.width, this.y);
-        ctx.lineTo(this.x, this.y);
-      } else {
-        // Bottom pipe
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x + this.width, this.y);
-        ctx.lineTo(this.x + this.width, this.y + this.height);
-        ctx.lineTo(this.x, this.y + this.height);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw pipe rim
-      ctx.fillStyle = '#006400';
-      ctx.fillRect(this.x - 2, this.flipped ? this.y + this.height - 20 : this.y, this.width + 4, 20);
-    }
-    getBounds() {
-      return {x: this.x, y: this.y, width: this.width, height: this.height};
-    }
-  }
-
-  // Ground class with simple scrolling pattern
-  class Ground {
-    constructor() {
-      this.y = HEIGHT - GROUND_HEIGHT;
-      this.speed = pipeSpeed * (slowMotionActive ? 0.3 : 1);
-      this.x = 0;
-      this.width = 400;
-      this.height = GROUND_HEIGHT;
-    }
-    update() {
-      this.speed = pipeSpeed * (slowMotionActive ? 0.3 : 1);
-      this.x -= this.speed;
-      if (this.x <= -this.width) {
-        this.x = 0;
-      }
-    }
-    draw(ctx) {
-      ctx.fillStyle = '#DEB887';
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-      ctx.fillRect(this.x + this.width, this.y, this.width, this.height);
-
-      // Simple pattern for ground (vertical lines)
-      ctx.strokeStyle = '#A0522D';
-      ctx.lineWidth = 2;
-      for (let i = this.x; i < this.x + this.width * 2; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, this.y + this.height);
-        ctx.lineTo(i, this.y + this.height - 20);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Particle class for flap & hit effects
-  class Particle {
-    constructor(x, y, vx, vy, size, color, lifetime) {
-      this.x = x;
-      this.y = y;
-      this.vx = vx;
-      this.vy = vy;
-      this.size = size;
-      this.color = color;
-      this.lifetime = lifetime;
-      this.age = 0;
-    }
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
-      this.vy += 0.15; // gravity effect
-      this.age++;
-    }
-    draw(ctx) {
-      ctx.globalAlpha = 1 - this.age / this.lifetime;
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.size, 0, 2*Math.PI);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    isDead() {
-      return this.age > this.lifetime;
-    }
-  }
-
-  // Power-up class
-  class PowerUp {
-    constructor(type, x, y) {
-      this.type = type; // 'shield' or 'slow'
-      this.x = x;
-      this.y = y;
-      this.width = 30;
-      this.height = 30;
-      this.collected = false;
-      this.frame = 0;
-      this.frameTick = 0;
-      this.frameSpeed = 10;
-    }
-    update() {
-      this.x -= pipeSpeed * (slowMotionActive ? 0.3 : 1);
-      this.frameTick++;
-      if (this.frameTick > this.frameSpeed) {
-        this.frame = (this.frame + 1) % 2;
-        this.frameTick = 0;
-      }
-    }
-    draw(ctx) {
-      ctx.save();
-      ctx.translate(this.x + this.width/2, this.y + this.height/2);
-      // Simple animation
-      const colors = {
-        shield: ['#00ffff', '#00ccd4'],
-        slow: ['#ffb347', '#ffcf70']
-      };
-      ctx.fillStyle = colors[this.type][this.frame];
-      ctx.beginPath();
-      ctx.arc(0, 0, this.width/2, 0, 2*Math.PI);
-      ctx.fill();
-
-      // Icon inside
-      ctx.fillStyle = this.type === 'shield' ? '#007777' : '#aa6600';
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = ctx.fillStyle;
-      if (this.type === 'shield') {
-        ctx.beginPath();
-        ctx.moveTo(-5, 0);
-        ctx.lineTo(0, 5);
-        ctx.lineTo(5, -5);
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(-5, 5);
-        ctx.lineTo(0, 0);
-        ctx.lineTo(5, 5);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    getBounds() {
-      return {x: this.x, y: this.y, width: this.width, height: this.height};
-    }
-  }
-
-  // === UTILS ===
-
-  // Simple AABB collision detection
-  function isColliding(a, b) {
-    return (
-      a.x < b.x + b.width &&
-      a.x + a.width > b.x &&
-      a.y < b.y + b.height &&
-      a.y + a.height > b.y
-    );
-  }
-
-  // Create particles on flap/hit
-  function createParticles(x, y) {
-    for (let i = 0; i < 10; i++) {
-      const p = new Particle(
-        x,
-        y,
-        (Math.random() - 0.5) * 3,
-        Math.random() * -3,
-        Math.random() * 2 + 1,
-        'rgba(255, 255, 0, 0.8)',
-        30
-      );
-      particles.push(p);
-    }
-  }
-
-  // Play sounds helper
-  function playSound(name) {
-    if (!assets.sounds[name] || isMuted || !soundOn) return;
-    assets.sounds[name].currentTime = 0;
-    assets.sounds[name].play();
-  }
-
-  // === GAME OBJECTS ===
-
-  let bird, ground;
-
-  // Reset game state
-  function resetGame() {
-    bird = new Bird(80, HEIGHT / 2 - BIRD_HEIGHT / 2);
-    ground = new Ground();
-    pipes = [];
-    powerUps = [];
-    particles = [];
-    score = 0;
-    gameTime = 0;
-    shieldActive = false;
-    slowMotionActive = false;
-    slowMotionTimer = 0;
-    pipeSpeed = PIPE_SPEED_BASE;
-    pipeGap = PIPE_GAP_BASE;
-    bird.alive = true;
-    achievementsUnlocked.clear();
-    scoreDisplay.textContent = '0';
-    highScore = +localStorage.getItem('flappyHighScore') || 0;
-    highScoreDisplay.textContent = `High Score: ${highScore}`;
-  }
-
-  // Spawn pipes periodically with increasing difficulty
-  function spawnPipes() {
-    // Vertical gap center
-    const minGap = pipeGap - 20;
-    const maxGap = pipeGap + 20;
-    const gapY = Math.floor(Math.random() * (HEIGHT - GROUND_HEIGHT - maxGap - 60)) + 30;
-
-    // Top pipe flipped
-    const topPipe = new Pipe(WIDTH, gapY - pipeGap - 320, true);
-    const bottomPipe = new Pipe(WIDTH, gapY);
-
-    pipes.push(topPipe);
-    pipes.push(bottomPipe);
-
-    // Chance to spawn powerup
-    if (Math.random() < 0.3 && powerUps.length === 0) {
-      const types = ['shield', 'slow'];
-      const type = types[Math.floor(Math.random() * types.length)];
-      const powerY = gapY + (type === 'shield' ? 40 : 20);
-      const powerUp = new PowerUp(type, WIDTH + 30, powerY);
-      powerUps.push(powerUp);
-    }
-  }
-
-  // Update difficulty based on score
-  function updateDifficulty() {
-    if (difficulty === 'easy') {
-      pipeSpeed = PIPE_SPEED_BASE + score * 0.05;
-      pipeGap = PIPE_GAP_BASE - score * 0.5;
-      if (pipeGap < 110) pipeGap = 110;
-    } else if (difficulty === 'normal') {
-      pipeSpeed = PIPE_SPEED_BASE + 0.5 + score * 0.07;
-      pipeGap = PIPE_GAP_BASE - score * 0.7;
-      if (pipeGap < 100) pipeGap = 100;
-    } else if (difficulty === 'hard') {
-      pipeSpeed = PIPE_SPEED_BASE + 1 + score * 0.1;
-      pipeGap = PIPE_GAP_BASE - score * 1;
-      if (pipeGap < 90) pipeGap = 90;
-    }
-  }
-
-  // Check collisions and update score
-  function checkCollisions() {
-    const birdBounds = bird.getBounds();
-
-    // Pipes
-    for (let pipe of pipes) {
-      if (isColliding(birdBounds, pipe.getBounds())) {
-        if (shieldActive) {
-          shieldActive = false;
-          bird.shield = false;
-          playSound('shieldBreak');
-          createParticles(bird.x + bird.width/2, bird.y + bird.height/2);
-          // remove pipe so player passes through once
-          pipes = pipes.filter(p => p !== pipe);
-          return;
-        } else {
-          bird.alive = false;
-          onGameOver();
-          return;
-        }
-      }
-
-      // Score when passing pipe pair (only count bottom pipe)
-      if (!pipe.flipped && !pipe.passed && pipe.x + pipe.width < bird.x) {
-        pipe.passed = true;
-        score++;
-        scoreDisplay.textContent = score;
-        if (score > highScore) {
-          highScore = score;
-          localStorage.setItem('flappyHighScore', highScore);
-          highScoreDisplay.textContent = `High Score: ${highScore}`;
-        }
-        playSound('score');
-        checkAchievements(score);
-      }
-    }
-
-    // Power-ups
-    for (let pu of powerUps) {
-      if (!pu.collected && isColliding(birdBounds, pu.getBounds())) {
-        pu.collected = true;
-        activatePowerUp(pu.type);
-        playSound('powerup');
-      }
-    }
-    powerUps = powerUps.filter(pu => !pu.collected && pu.x + pu.width > 0);
-  }
-
-  // Activate power-ups
-  function activatePowerUp(type) {
-    if (type === 'shield') {
-      shieldActive = true;
-      bird.shield = true;
-      showAchievement('Shield Activated!');
-    } else if (type === 'slow') {
-      slowMotionActive = true;
-      slowMotionTimer = 600; // 10 seconds @60fps
-      showAchievement('Slow Motion Activated!');
-    }
-  }
-
-  // Achievements
-  function checkAchievements(score) {
-    const milestones = [5, 10, 20, 50, 100];
-    for (let milestone of milestones) {
-      if (score >= milestone && !achievementsUnlocked.has(milestone)) {
-        achievementsUnlocked.add(milestone);
-        showAchievement(`Achievement: ${milestone} Points!`);
-      }
-    }
-  }
-
-  // Show achievement popup
-  let achievementTimeout;
-  function showAchievement(text) {
-    achievementPopup.textContent = text;
-    achievementPopup.classList.add('show');
-    clearTimeout(achievementTimeout);
-    achievementTimeout = setTimeout(() => {
-      achievementPopup.classList.remove('show');
-    }, 2500);
-  }
-
-  // Game over handler
-  function onGameOver() {
-    gameRunning = false;
-    cancelAnimationFrame(animationId);
-    clearInterval(pipeIntervalId);
-
-    finalScoreText.textContent = `Score: ${score}`;
-    gameOverScreen.style.display = 'block';
-    muteBtn.style.display = 'none';
-    scoreDisplay.style.display = 'none';
-  }
-
-  // Draw everything each frame
-  function draw() {
-    ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-    // Draw background parallax layers
-    drawBackground();
-
-    // Draw pipes
-    for (let pipe of pipes) {
-      pipe.draw(ctx);
-    }
-
-    // Draw power-ups
-    for (let pu of powerUps) {
-      pu.draw(ctx);
-    }
-
-    // Draw particles
-    for (let p of particles) {
-      p.draw(ctx);
-    }
-
-    // Draw ground
-    ground.draw(ctx);
-
-    // Draw bird on top
-    bird.draw(ctx);
-  }
-
-  // Update game state
-  function update() {
-    if (!gameRunning) return;
-    gameTime++;
-
-    // Update bird
-    bird.update();
-
-    // Update pipes
-    for (let pipe of pipes) {
-      pipe.update();
-    }
-    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
-
-    // Update power-ups
-    for (let pu of powerUps) {
-      pu.update();
-    }
-
-    // Update particles and remove dead ones
-    particles.forEach(p => p.update());
-    particles = particles.filter(p => !p.isDead());
-
-    // Update ground
-    ground.update();
-
-    // Spawn pipes every 90 frames (~1.5 seconds)
-    if (gameTime % 90 === 0) {
-      spawnPipes();
-    }
-
-    // Update difficulty based on score
-    updateDifficulty();
-
-    // Slow motion timer countdown
-    if (slowMotionActive) {
-      slowMotionTimer--;
-      if (slowMotionTimer <= 0) {
-        slowMotionActive = false;
-      }
-    }
-
-    // Check collisions
-    checkCollisions();
-  }
-
-  // Main game loop
-  function gameLoop() {
-    update();
-    draw();
-    if (gameRunning) {
-      animationId = requestAnimationFrame(gameLoop);
-    }
-  }
-
-  // Handle flap on space or mouse click or touch
-  function handleInput(e) {
-    e.preventDefault();
-    if (!gameRunning) return;
-    bird.flap();
-  }
-
-  // Mute/unmute music
-  function toggleMute() {
-    isMuted = !isMuted;
-    for (const key in assets.sounds) {
-      assets.sounds[key].muted = isMuted;
-    }
-    muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
-  }
-
-  // Initialize everything and start game
-  async function init() {
-    scoreDisplay.textContent = '0';
-    highScore = +localStorage.getItem('flappyHighScore') || 0;
-    highScoreDisplay.textContent = `High Score: ${highScore}`;
-    muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
-
-    try {
-      // Load sounds
-      assets.sounds['flap'] = await loadAudio('sounds/flap.wav');
-      assets.sounds['score'] = await loadAudio('sounds/score.wav');
-      assets.sounds['powerup'] = await loadAudio('sounds/powerup.wav');
-      assets.sounds['shieldBreak'] = await loadAudio('sounds/shieldBreak.wav');
-
-      // Start background music
-      assets.sounds['bgMusic'] = await loadAudio('sounds/bgMusic.mp3', true);
-      assets.sounds['bgMusic'].volume = musicVolume;
-      if (!isMuted) assets.sounds['bgMusic'].play();
-
-      resetGame();
-      gameRunning = true;
-      gameLoop();
-
-      // Start pipe spawn interval
-      pipeIntervalId = setInterval(spawnPipes, 1500);
-    } catch (e) {
-      console.error('Error loading assets:', e);
-    }
-  }
-
   // Constants
   const WIDTH = 480;
   const HEIGHT = 640;
@@ -919,13 +136,13 @@
   let slowMotionTimer = 0;
   let pipeSpeed = PIPE_SPEED_BASE;
   let pipeGap = PIPE_GAP_BASE;
-  let difficulty = 'normal';
   let gameRunning = false;
   let animationId;
   let pipeIntervalId;
   let achievementsUnlocked = new Set();
+  let isMuted = false;
 
-  // DOM elements
+  // DOM Elements
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   const scoreDisplay = document.getElementById('score');
@@ -936,46 +153,369 @@
   const finalScoreText = document.getElementById('finalScore');
   const restartBtn = document.getElementById('restartBtn');
 
-  canvas.width = WIDTH;
-  canvas.height = HEIGHT;
-
-  // Background parallax layers setup
+  // Background layers for parallax
   const bgLayers = [
     { speed: 0.2, color: '#87CEEB', y: 0, height: HEIGHT - GROUND_HEIGHT - 100 },
     { speed: 0.4, color: '#ADD8E6', y: HEIGHT - GROUND_HEIGHT - 100, height: 80 },
     { speed: 0.6, color: '#90EE90', y: HEIGHT - GROUND_HEIGHT - 20, height: 20 },
   ];
   let bgOffset = 0;
-  function drawBackground() {
-    bgOffset -= pipeSpeed * 0.3 * (slowMotionActive ? 0.3 : 1);
-    if (bgOffset < -WIDTH) bgOffset = 0;
-    for (const layer of bgLayers) {
-      ctx.fillStyle = layer.color;
-      ctx.fillRect(bgOffset * layer.speed, layer.y, WIDTH, layer.height);
-      ctx.fillRect(bgOffset * layer.speed + WIDTH, layer.y, WIDTH, layer.height);
+
+  // Assets placeholders (Sounds can be added)
+  const assets = { sounds: {} };
+  let musicVolume = 0.4;
+
+  // Bird class
+  class Bird {
+    constructor() {
+      this.x = 80;
+      this.y = HEIGHT / 2;
+      this.width = BIRD_WIDTH;
+      this.height = BIRD_HEIGHT;
+      this.velocity = 0;
+      this.gravity = 0.6;
+      this.lift = -9;
+      this.frame = 0;
+      this.frameCount = 0;
+    }
+    update() {
+      this.velocity += this.gravity * (slowMotionActive ? 0.3 : 1);
+      this.y += this.velocity;
+
+      if (this.y + this.height > HEIGHT - GROUND_HEIGHT) {
+        this.y = HEIGHT - GROUND_HEIGHT - this.height;
+        this.velocity = 0;
+      }
+      if (this.y < 0) {
+        this.y = 0;
+        this.velocity = 0;
+      }
+
+      // Wing flap animation frame update
+      this.frameCount++;
+      if (this.frameCount % 5 === 0) {
+        this.frame = (this.frame + 1) % 3;
+      }
+    }
+    flap() {
+      this.velocity = this.lift * (slowMotionActive ? 0.3 : 1);
+      createParticles(this.x + this.width / 2, this.y + this.height);
+      playSound('flap');
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x + this.width/2, this.y + this.height/2);
+      // Rotate slightly based on velocity
+      let angle = Math.min(Math.max(this.velocity / 10, -0.5), 0.5);
+      ctx.rotate(angle);
+
+      // Draw bird body - simple colored rectangle with wing frames
+      ctx.fillStyle = '#FF0';
+      ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+
+      // Wings (animated)
+      ctx.fillStyle = '#FFA500';
+      if (this.frame === 0) {
+        ctx.fillRect(-this.width/2 - 8, -4, 8, 8);
+      } else if (this.frame === 1) {
+        ctx.fillRect(-this.width/2 - 10, -6, 10, 12);
+      } else {
+        ctx.fillRect(-this.width/2 - 8, -4, 8, 8);
+      }
+
+      // Shield ring
+      if (shieldActive) {
+        ctx.strokeStyle = 'cyan';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.width/1.2, this.height/1.2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
   }
 
-  // Event listeners
-  window.addEventListener('keydown', e => {
-    if (e.code === 'Space') handleInput(e);
-  });
-  canvas.addEventListener('click', handleInput);
-  canvas.addEventListener('touchstart', handleInput);
-  muteBtn.addEventListener('click', toggleMute);
-  restartBtn.addEventListener('click', () => {
+  // Pipe class
+  class Pipe {
+    constructor(x, y, height, isTop) {
+      this.x = x;
+      this.y = y;
+      this.width = PIPE_WIDTH;
+      this.height = height;
+      this.isTop = isTop;
+    }
+    update() {
+      this.x -= pipeSpeed * (slowMotionActive ? 0.3 : 1);
+    }
+    draw() {
+      ctx.fillStyle = '#228B22';
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      // Pipe cap (darker)
+      ctx.fillStyle = '#006400';
+      if (this.isTop) {
+        ctx.fillRect(this.x, this.y + this.height - 10, this.width, 10);
+      } else {
+        ctx.fillRect(this.x, this.y, this.width, 10);
+      }
+    }
+  }
+
+  // PowerUp class
+  class PowerUp {
+    constructor(x, y, type) {
+      this.x = x;
+      this.y = y;
+      this.size = 24;
+      this.type = type; // 'shield' or 'slow'
+      this.collected = false;
+    }
+    update() {
+      this.x -= pipeSpeed * (slowMotionActive ? 0.3 : 1);
+    }
+    draw() {
+      ctx.fillStyle = this.type === 'shield' ? 'cyan' : 'purple';
+      ctx.beginPath();
+      ctx.arc(this.x + this.size / 2, this.y + this.size / 2, this.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '18px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.type === 'shield' ? 'S' : 'T', this.x + this.size / 2, this.y + this.size / 2);
+    }
+  }
+
+  // Particle class for flap and shield break
+  class Particle {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.radius = Math.random() * 3 + 2;
+      this.color = 'yellow';
+      this.life = 30;
+      this.velocity = {
+        x: (Math.random() - 0.5) * 2,
+        y: Math.random() * -2 - 1
+      };
+    }
+    update() {
+      this.life--;
+      this.x += this.velocity.x;
+      this.y += this.velocity.y;
+      this.radius *= 0.95;
+    }
+    isDead() {
+      return this.life <= 0 || this.radius < 0.5;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = Math.max(this.life / 30, 0);
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Ground object for collision
+  const ground = {
+    x: 0,
+    y: HEIGHT - GROUND_HEIGHT,
+    width: WIDTH,
+    height: GROUND_HEIGHT,
+    update() {
+      this.x -= pipeSpeed * (slowMotionActive ? 0.3 : 1);
+      if (this.x <= -WIDTH) this.x = 0;
+    },
+    draw() {
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(this.x, this.y, this.width, this.height);
+      ctx.fillRect(this.x + this.width, this.y, this.width, this.height);
+    }
+  };
+
+  // Game variables
+  let bird;
+  let gameTime = 0;
+
+  // Utility functions
+  function playSound(name) {
+    if (isMuted) return;
+    const sound = assets.sounds[name];
+    if (sound) {
+      sound.currentTime = 0;
+      sound.play();
+    }
+  }
+
+  function createParticles(x, y) {
+    for (let i = 0; i < 8; i++) {
+      particles.push(new Particle(x, y));
+    }
+  }
+
+  // Spawn pipes and power-ups
+  function spawnPipes() {
+    const gap = pipeGap;
+    const minHeight = 50;
+    const maxHeight = HEIGHT - GROUND_HEIGHT - gap - minHeight;
+
+    const topHeight = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+    const bottomY = topHeight + gap;
+    const bottomHeight = HEIGHT - GROUND_HEIGHT - bottomY;
+
+    pipes.push(new Pipe(WIDTH, 0, topHeight, true));
+    pipes.push(new Pipe(WIDTH, bottomY, bottomHeight, false));
+
+    // Occasionally spawn power-ups
+    if (Math.random() < 0.15) {
+      const puType = Math.random() < 0.5 ? 'shield' : 'slow';
+      const puY = Math.random() * (HEIGHT - GROUND_HEIGHT - 100) + 50;
+      powerUps.push(new PowerUp(WIDTH + PIPE_WIDTH + 20, puY, puType));
+    }
+  }
+
+  // Reset game state
+  function resetGame() {
+    bird = new Bird();
+    pipes = [];
+    powerUps = [];
+    particles = [];
+    score = 0;
+    shieldActive = false;
+    slowMotionActive = false;
+    slowMotionTimer = 0;
+    pipeSpeed = PIPE_SPEED_BASE;
+    pipeGap = PIPE_GAP_BASE;
+    gameTime = 0;
+    achievementsUnlocked.clear();
+
+    scoreDisplay.textContent = '0';
+    highScoreDisplay.textContent = `High Score: ${highScore}`;
     gameOverScreen.style.display = 'none';
     scoreDisplay.style.display = 'block';
     muteBtn.style.display = 'block';
-    resetGame();
-    gameRunning = true;
-    gameLoop();
+
+    clearInterval(pipeIntervalId);
     pipeIntervalId = setInterval(spawnPipes, 1500);
-  });
+  }
 
-  // Start the game
-  init();
+  // Check collisions with pipes, ground, power-ups
+  function checkCollisions() {
+    // Bird rectangle
+    const birdRect = { x: bird.x, y: bird.y, width: bird.width, height: bird.height };
 
----
+    // Check ground collision
+    if (bird.y + bird.height >= HEIGHT - GROUND_HEIGHT) {
+      if (shieldActive) {
+        shieldActive = false;
+        playSound('shieldBreak');
+        createParticles(bird.x + bird.width / 2, bird.y + bird.height / 2);
+      } else {
+        endGame();
+      }
+    }
 
+    // Check pipe collisions
+    for (const pipe of pipes) {
+      const pipeRect = { x: pipe.x, y: pipe.y, width: pipe.width, height: pipe.height };
+      if (rectIntersect(birdRect, pipeRect)) {
+        if (shieldActive) {
+          shieldActive = false;
+          playSound('shieldBreak');
+          createParticles(bird.x + bird.width / 2, bird.y + bird.height / 2);
+          // Remove pipe hit
+          pipes = pipes.filter(p => p !== pipe);
+          break;
+        } else {
+          endGame();
+          break;
+        }
+      }
+    }
 
+    // Check power-up collection
+    for (const pu of powerUps) {
+      if (!pu.collected) {
+        const puRect = { x: pu.x, y: pu.y, width: pu.size, height: pu.size };
+        if (rectIntersect(birdRect, puRect)) {
+          pu.collected = true;
+          collectPowerUp(pu.type);
+        }
+      }
+    }
+  }
+
+  // Rectangle intersection helper
+  function rectIntersect(r1, r2) {
+    return !(r2.x > r1.x + r1.width ||
+      r2.x + r2.width < r1.x ||
+      r2.y > r1.y + r1.height ||
+      r2.y + r2.height < r1.y);
+  }
+
+  // Collect power-up effect
+  function collectPowerUp(type) {
+    playSound('powerup');
+    if (type === 'shield') {
+      shieldActive = true;
+      showAchievement('Shield Activated!');
+    } else if (type === 'slow') {
+      slowMotionActive = true;
+      slowMotionTimer = 300; // frames (~5 seconds)
+      showAchievement('Slow Motion Activated!');
+    }
+  }
+
+  // Update game difficulty with score
+  function updateDifficulty() {
+    if (score > 30 && pipeSpeed === PIPE_SPEED_BASE) {
+      pipeSpeed = PIPE_SPEED_BASE + 1;
+      pipeGap = PIPE_GAP_BASE - 15;
+      showAchievement('Difficulty Increased!');
+    } else if (score > 60 && pipeSpeed === PIPE_SPEED_BASE + 1) {
+      pipeSpeed = PIPE_SPEED_BASE + 2;
+      pipeGap = PIPE_GAP_BASE - 30;
+      showAchievement('Difficulty Increased Again!');
+    }
+  }
+
+  // Show achievement popup
+  function showAchievement(text) {
+    if (achievementsUnlocked.has(text)) return;
+    achievementsUnlocked.add(text);
+    achievementPopup.textContent = text;
+    achievementPopup.style.display = 'block';
+    setTimeout(() => {
+      achievementPopup.style.display = 'none';
+    }, 3000);
+  }
+
+  // End game logic
+  function endGame() {
+    gameRunning = false;
+    clearInterval(pipeIntervalId);
+    cancelAnimationFrame(animationId);
+    finalScoreText.textContent = score;
+    gameOverScreen.style.display = 'flex';
+    scoreDisplay.style.display = 'none';
+    muteBtn.style.display = 'none';
+
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('flappyHighScore', highScore);
+      highScoreDisplay.textContent = `High Score: ${highScore}`;
+    }
+  }
+
+  // Update game objects each frame
+  function update() {
+    if (!gameRunning) return;
+    gameTime++;
+
+    bird.update();
+
+    pipes.forEach(pipe => pipe.update());
+    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+
+    powerUps.forEach(p

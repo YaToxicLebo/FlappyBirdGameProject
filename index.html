@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Flappy Bird Game</title>
+<title>Flappy Bird</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
 
@@ -86,6 +86,7 @@
     pointer-events: none;
     user-select: none;
     z-index: 5;
+    display: none;
   }
 
   /* Game over screen */
@@ -172,23 +173,37 @@
       this.width = BIRD_SIZE;
       this.height = BIRD_SIZE;
       this.rotation = 0;
-      this.frame = 0;
-      this.sprite = new Image();
-      this.sprite.src = 'https://i.imgur.com/s6DXXTn.png'; // simple bird sprite (3 frames)
+      this.frameCount = 0;
     }
 
     draw() {
       ctx.save();
       ctx.translate(this.x, this.y);
       ctx.rotate(this.rotation);
-      // Draw bird as colored circle + eyes for fallback
-      // ctx.fillStyle = "#ffeb3b";
-      // ctx.beginPath();
-      // ctx.ellipse(0, 0, this.width/2, this.height/2, 0, 0, Math.PI * 2);
-      // ctx.fill();
-      // Draw sprite frame
-      let frameX = this.frame * this.width;
-      ctx.drawImage(this.sprite, frameX, 0, this.width, this.height, -this.width/2, -this.height/2, this.width, this.height);
+
+      // Draw bird body
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#bba600';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Draw eyes
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(-6, -6, 5, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(6, -6, 5, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Pupils
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.ellipse(-6, -6, 2, 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(6, -6, 2, 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.restore();
     }
 
@@ -200,12 +215,6 @@
         this.rotation = -0.4;
       } else if (this.velocity >= 0) {
         this.rotation = Math.min(Math.PI / 2, this.rotation + 0.05);
-      }
-
-      // Animate flapping wings every 5 frames
-      if (gameStarted && !gameOver) {
-        this.frame += 0.15;
-        if (this.frame >= 3) this.frame = 0;
       }
     }
 
@@ -223,8 +232,6 @@
       this.passed = false;
       this.colorTop = '#27ae60';
       this.colorBottom = '#2ecc71';
-      this.texture = new Image();
-      this.texture.src = 'https://i.imgur.com/W8YIRcu.png'; // pipe texture
     }
 
     draw() {
@@ -239,10 +246,6 @@
       ctx.fillRect(this.x, this.bottomY, this.width, canvas.height - this.bottomY);
       ctx.fillStyle = '#145214';
       ctx.fillRect(this.x, this.bottomY, this.width, 20);
-
-      // Optional: Add pipe texture - commented for performance
-      // ctx.drawImage(this.texture, this.x, 0, this.width, this.topHeight);
-      // ctx.drawImage(this.texture, this.x, this.bottomY, this.width, canvas.height - this.bottomY);
     }
 
     update() {
@@ -255,6 +258,7 @@
     pipes = [];
     score = 0;
     scoreDisplay.textContent = score;
+    scoreDisplay.style.display = 'block';
     gameOver = false;
     gameOverScreen.style.display = 'none';
 
@@ -341,24 +345,22 @@
     cancelAnimationFrame(animationId);
     finalScore.textContent = `Score: ${score}`;
     gameOverScreen.style.display = 'flex';
+    scoreDisplay.style.display = 'none';
   }
 
   // Event listeners
   window.addEventListener('keydown', e => {
-    if (e.code === 'Space' || e.code === 'ArrowUp') {
-      if (!gameStarted) return;
-      if (!gameOver) bird.flap();
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && gameStarted && !gameOver) {
+      bird.flap();
     }
   });
 
   window.addEventListener('mousedown', e => {
-    if (!gameStarted) return;
-    if (!gameOver) bird.flap();
+    if (gameStarted && !gameOver) bird.flap();
   });
 
   startBtn.addEventListener('click', () => {
     menu.style.display = 'none';
-    scoreDisplay.style.display = 'block';
     gameStarted = true;
     resetGame();
     gameLoop();
@@ -370,5 +372,6 @@
     gameLoop();
   });
 </script>
+
 </body>
 </html>

@@ -3,410 +3,85 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Flappy — HTML Canvas Game</title>
+  <title>Flappy Deluxe</title>
   <style>
     :root{
-      --bg1:#7dd3fc; /* sky */
-      --bg2:#0369a1;
-      --accent:#ffd166;
-      --card:#ffffffee;
-      --muted:#64748b;
-      --glass: rgba(255,255,255,0.25);
+      --sky:#8fd3fe;--sky2:#bde9ff;--ground:#6fcf97;--pipe:#2b9a77;--pipe-dark:#227a5f;--accent:#ffd166;--muted:#64748b;--glass:rgba(255,255,255,0.25);
     }
-    *{box-sizing:border-box;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    html,body{height:100%;margin:0}
-    body{background:linear-gradient(180deg,var(--bg1),#bde4ff);display:flex;align-items:center;justify-content:center;padding:24px}
-    .wrapper{width:100%;max-width:980px;background:linear-gradient(180deg,rgba(255,255,255,0.7),rgba(255,255,255,0.55));border-radius:16px;box-shadow:0 10px 30px rgba(2,6,23,0.18);overflow:hidden}
-
-    header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:linear-gradient(90deg,#ffffffcc,#ffffffaa);backdrop-filter:blur(6px)}
-    header h1{margin:0;font-size:20px;letter-spacing:0.4px}
-    header .controls{display:flex;gap:8px;align-items:center}
-
-    main{display:grid;grid-template-columns:360px 1fr;gap:18px;padding:22px}
-
-    /* left column: menu */
-    .panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:inset 0 -6px 18px rgba(2,6,23,0.03)}
-    .menu .title{font-weight:700;margin-bottom:8px}
-    .menu .subtitle{color:var(--muted);font-size:13px;margin-bottom:12px}
-    .menu .btn{display:inline-block;padding:12px 16px;border-radius:10px;background:linear-gradient(180deg,var(--accent),#ffb84d);cursor:pointer;font-weight:700;color:#043;box-shadow:0 6px 14px rgba(0,0,0,0.12);border:none}
-    .menu .btn.secondary{background:transparent;border:1px solid #e6e9ef;color:#123;padding:10px 12px}
-
-    .skins{display:flex;gap:8px;flex-wrap:wrap}
-    .skin{width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent}
-    .skin.selected{outline:3px solid #fff;box-shadow:0 6px 12px rgba(2,6,23,0.08)}
-    .skin svg{width:48px;height:48px}
-
-    .settings{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-    .row{display:flex;align-items:center;justify-content:space-between}
-
-    /* right column: game */
-    .stage{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#7ed0ff 0%,#bfeaff 60%);min-height:520px}
-    canvas{display:block;width:100%;height:100%;background:transparent}
-
-    .hud{position:absolute;top:14px;left:14px;display:flex;gap:8px;align-items:center}
-    .score{background:var(--glass);padding:8px 12px;border-radius:999px;font-weight:800}
-
-    .ingame-btn{position:absolute;top:14px;right:14px;background:var(--card);padding:8px;border-radius:8px;cursor:pointer}
-
-    /* modal overlay */
-    .overlay{position:absolute;inset:0;background:linear-gradient(rgba(2,6,23,0.2),rgba(2,6,23,0.05));display:flex;align-items:center;justify-content:center}
-    .menu-card{background:rgba(255,255,255,0.92);backdrop-filter:blur(6px);padding:22px;border-radius:12px;min-width:320px}
-    .menu-card h2{margin:0 0 8px 0}
-    .small{font-size:13px;color:var(--muted)}
-
-    footer{padding:12px 18px;background:linear-gradient(90deg,#ffffffaa,#ffffff88);display:flex;justify-content:space-between;align-items:center}
-
-    /* responsive */
-    @media (max-width:880px){main{grid-template-columns:1fr;gap:12px}.panel{order:2}.stage{order:1;min-height:420px}}
+    *{box-sizing:border-box;font-family:Poppins,Inter,ui-sans-serif}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--sky),var(--sky2));}
+    .center{display:flex;align-items:center;justify-content:center;height:100%;}
+    canvas{display:block;margin:auto;background:transparent}
+    #menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(180deg,var(--sky),var(--sky2));z-index:10;transition:opacity .6s;}
+    #menu.hidden{opacity:0;pointer-events:none;}
+    #menu h1{font-size:3rem;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);animation:float 3s ease-in-out infinite;}
+    #menu button{margin-top:20px;padding:12px 30px;border:none;border-radius:12px;background:linear-gradient(180deg,var(--accent),#ffb84d);color:#043;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.25);transition:transform .2s;}
+    #menu button:hover{transform:scale(1.05);}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
   </style>
 </head>
 <body>
-  <div class="wrapper" role="application">
-    <header>
-      <h1>Flappy — HTML Canvas Game</h1>
-      <div class="controls">
-        <button id="openSettings" class="btn secondary">Settings</button>
-        <div style="font-size:13px;color:var(--muted)">Best: <span id="bestScore">0</span></div>
-      </div>
-    </header>
-
-    <main>
-      <div class="panel menu">
-        <div class="title">Main Menu</div>
-        <div class="subtitle">Click <strong>Play</strong> to start. Choose a bird skin and tweak settings below.</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button id="playBtn" class="btn">Play</button>
-          <button id="howBtn" class="btn secondary">How to play</button>
-        </div>
-
-        <div style="margin-top:8px" class="title">Choose a bird skin</div>
-        <div class="skins" id="skins"></div>
-
-        <div class="settings">
-          <div class="row">
-            <div class="small">Volume</div>
-            <input id="volume" type="range" min="0" max="1" step="0.01" value="0.7">
-          </div>
-          <div class="row">
-            <div class="small">Difficulty</div>
-            <select id="difficulty">
-              <option value="easy">Easy (wider gaps)</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Hard (narrow gaps)</option>
-            </select>
-          </div>
-          <div class="row">
-            <div class="small">Show FPS</div>
-            <input id="showFps" type="checkbox">
-          </div>
-        </div>
-
-        <div style="margin-top:14px;font-size:13px;color:var(--muted)">Tip: press space or tap/click the game to flap. You can return to main menu during play with the button in the top-right.</div>
-      </div>
-
-      <div class="stage panel" id="stage">
-        <div class="hud">
-          <div class="score" id="scoreDisplay">0</div>
-        </div>
-        <button class="ingame-btn" id="backToMenu">Main Menu</button>
-        <canvas id="gameCanvas" width="800" height="520"></canvas>
-        <!-- overlay menus shown/hidden by JS -->
-        <div class="overlay" id="mainOverlay">
-          <div class="menu-card">
-            <h2>Flappy</h2>
-            <div class="small" style="margin-bottom:12px">Press Play on the left menu or press Space to start.</div>
-            <div style="display:flex;gap:8px">
-              <button id="overlayPlay" class="btn">Play</button>
-              <button id="overlayClose" class="btn secondary">Close</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="overlay" id="pauseOverlay" style="display:none">
-          <div class="menu-card">
-            <h2 id="pauseTitle">Paused</h2>
-            <div class="small" id="pauseMsg">Score: 0</div>
-            <div style="display:flex;gap:8px;margin-top:12px">
-              <button id="continueBtn" class="btn">Continue</button>
-              <button id="returnMenuBtn" class="btn secondary">Main Menu</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </main>
-
-    <footer>
-      <div style="font-size:13px;color:var(--muted)">Made with ♥ — tap/click to flap</div>
-      <div style="font-size:13px;color:var(--muted)">v1.0</div>
-    </footer>
+  <div class="center">
+    <canvas id="game" width="800" height="500"></canvas>
+    <div id="menu">
+      <h1>Flappy Deluxe</h1>
+      <button id="play">Play</button>
+    </div>
   </div>
 
   <script>
-    // --- Game variables ---
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const bestScoreEl = document.getElementById('bestScore');
-    const overlay = document.getElementById('mainOverlay');
-    const pauseOverlay = document.getElementById('pauseOverlay');
-    const pauseTitle = document.getElementById('pauseTitle');
-    const pauseMsg = document.getElementById('pauseMsg');
+  const canvas=document.getElementById('game');
+  const ctx=canvas.getContext('2d');
+  const menu=document.getElementById('menu');
+  const playBtn=document.getElementById('play');
+  let bird,pipes,gravity,frame,running,score,best=0; let intro=true;
 
-    // responsive canvas scaling
-    function fitCanvas(){
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.floor(rect.width);
-      canvas.height = Math.floor(rect.height);
-    }
-    window.addEventListener('resize', fitCanvas);
-    setTimeout(fitCanvas,50);
+  function fit(){canvas.width=window.innerWidth>800?800:window.innerWidth*0.95;canvas.height=window.innerHeight>500?500:window.innerHeight*0.7;}
+  window.addEventListener('resize',fit);fit();
 
-    // skins
-    const skins = [
-      {name:'Sunny', colors:{body:'#ffd166',beak:'#ff6b6b'}},
-      {name:'Mint', colors:{body:'#8ee4af',beak:'#ffb86b'}},
-      {name:'Coral', colors:{body:'#ff7b9c',beak:'#ffd166'}},
-      {name:'Blue', colors:{body:'#5eead4',beak:'#ffd166'}},
-      {name:'Mono', colors:{body:'#6b7280',beak:'#d1d5db'}}
-    ];
+  function reset(){
+    bird={x:canvas.width/4,y:canvas.height/2,vy:0,r:16,rot:0,hover:0};
+    pipes=[];frame=0;score=0;gravity=0.4;running=false;intro=true;
+  }
 
-    // read selected skin from localStorage
-    let selectedSkinIndex = Number(localStorage.getItem('flappy-skin') || 0);
-    if(selectedSkinIndex < 0 || selectedSkinIndex >= skins.length) selectedSkinIndex = 0;
+  function spawnPipe(){
+    const gap=130;const top=60+Math.random()*(canvas.height-gap-120);
+    pipes.push({x:canvas.width,top, gap, passed:false});
+  }
 
-    // create skins UI
-    const skinsContainer = document.getElementById('skins');
-    skins.forEach((s,i)=>{
-      const el = document.createElement('button');
-      el.className = 'skin';
-      el.title = s.name;
-      el.innerHTML = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g>
-        <ellipse cx="30" cy="32" rx="12" ry="10" fill="${s.colors.body}" />
-        <circle cx="26" cy="28" r="2.8" fill="#111" />
-        <polygon points="40,32 48,30 48,34" fill="${s.colors.beak}" />
-      </g></svg>`;
-      el.addEventListener('click', ()=>{
-        selectedSkinIndex = i; localStorage.setItem('flappy-skin', i); updateSkinsUI();
-      });
-      skinsContainer.appendChild(el);
-    });
-    function updateSkinsUI(){
-      Array.from(skinsContainer.children).forEach((c,ci)=>{
-        c.classList.toggle('selected', ci===selectedSkinIndex);
-      });
-    }
-    updateSkinsUI();
+  function startGame(){reset();menu.classList.add('hidden');running=true;intro=false;loop();beep(880,0.06);}
+  playBtn.onclick=startGame;
+  canvas.onclick=()=>{if(intro){startGame()}else if(running){flap()}};
+  window.onkeydown=e=>{if(e.code==='Space'){e.preventDefault();if(intro)startGame();else flap();}};
 
-    // settings
-    const volumeInput = document.getElementById('volume');
-    const difficultySel = document.getElementById('difficulty');
-    const showFps = document.getElementById('showFps');
+  function flap(){bird.vy=-6;beep(880,0.05);}
 
-    const settings = {
-      volume: Number(localStorage.getItem('flappy-volume') || volumeInput.value || 0.7),
-      difficulty: localStorage.getItem('flappy-diff') || difficultySel.value || 'normal',
-      showFps: localStorage.getItem('flappy-showFps')==='true' || false
-    };
-    volumeInput.value = settings.volume;
-    difficultySel.value = settings.difficulty;
-    showFps.checked = settings.showFps;
+  function beep(freq,len){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=0.08;o.frequency.value=freq;o.start();setTimeout(()=>{o.stop();a.close();},len*1000);}catch(e){}}
 
-    volumeInput.addEventListener('input', (e)=>{settings.volume = Number(e.target.value);localStorage.setItem('flappy-volume',settings.volume)});
-    difficultySel.addEventListener('change',(e)=>{settings.difficulty=e.target.value;localStorage.setItem('flappy-diff',settings.difficulty)});
-    showFps.addEventListener('change',(e)=>{settings.showFps=e.target.checked;localStorage.setItem('flappy-showFps',settings.showFps)});
+  function update(){
+    frame++;
+    if(frame%100===0)spawnPipe();
+    if(intro){bird.hover+=0.1;bird.y=canvas.height/2+Math.sin(bird.hover)*10;return;}
+    for(let i=pipes.length-1;i>=0;i--){pipes[i].x-=2; if(pipes[i].x<-60)pipes.splice(i,1);} 
+    bird.vy+=gravity;bird.y+=bird.vy;bird.rot=Math.max(-0.3,Math.min(1.2,bird.vy*0.05));
+    pipes.forEach(p=>{if(!p.passed&&p.x+60<bird.x){p.passed=true;score++;beep(660,0.04);} });
+    for(const p of pipes){if(collide(bird,p)){running=false;menu.classList.remove('hidden');menu.querySelector('h1').innerText='Game Over! Score '+score;beep(220,0.2);}}
+    if(bird.y+bird.r>canvas.height-24){running=false;menu.classList.remove('hidden');menu.querySelector('h1').innerText='Game Over! Score '+score;beep(220,0.2);}  
+  }
 
-    // buttons
-    document.getElementById('playBtn').addEventListener('click', startFromMenu);
-    document.getElementById('overlayPlay').addEventListener('click', startFromMenu);
-    document.getElementById('overlayClose').addEventListener('click', ()=>overlay.style.display='none');
-    document.getElementById('howBtn').addEventListener('click', ()=>alert('Flap to fly between pipes. Click/tap/space to flap.'));
-    document.getElementById('openSettings').addEventListener('click', ()=>alert('Settings are on the left column — volume, difficulty, and show FPS.'));
+  function collide(b,p){if(b.x+b.r>p.x&&b.x-b.r<p.x+60){if(b.y-b.r<p.top||b.y+b.r>p.top+p.gap)return true;}return false;}
 
-    // in-game menu buttons
-    document.getElementById('backToMenu').addEventListener('click',()=>{endGame(); showMainMenu();});
-    document.getElementById('continueBtn').addEventListener('click',()=>{resumeGame();});
-    document.getElementById('returnMenuBtn').addEventListener('click',()=>{endGame(); showMainMenu();});
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const g=ctx.createLinearGradient(0,0,0,canvas.height);g.addColorStop(0,'#9be7ff');g.addColorStop(1,'#bfeaff');ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+    for(const p of pipes){ctx.fillStyle='#2b9a77';ctx.fillRect(p.x,0,60,p.top);ctx.fillRect(p.x,p.top+p.gap,60,canvas.height-(p.top+p.gap)-24);}
+    ctx.fillStyle='#6fcf97';ctx.fillRect(0,canvas.height-24,canvas.width,24);
+    ctx.save();ctx.translate(bird.x,bird.y);ctx.rotate(bird.rot);ctx.fillStyle='#ffd166';ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111';ctx.beginPath();ctx.arc(-4,-2,3,0,Math.PI*2);ctx.fill();ctx.restore();
+    ctx.fillStyle='#fff';ctx.font='bold 20px Poppins';ctx.fillText(score,20,30);
+  }
 
-    // overlay click starts
-    function startFromMenu(){ overlay.style.display='none'; initGame(); }
-    function showMainMenu(){ overlay.style.display='flex'; pauseOverlay.style.display='none'; running=false; }
-
-    // sound via simple oscillator for flap and beep
-    function beep(freq, length=0.08){
-      try{
-        const ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctxAudio.createOscillator();
-        const g = ctxAudio.createGain();
-        o.connect(g); g.connect(ctxAudio.destination);
-        g.gain.value = settings.volume * 0.12;
-        o.frequency.value = freq; o.type='sine';
-        o.start();
-        setTimeout(()=>{o.stop(); ctxAudio.close();}, length*1000);
-      }catch(e){}
-    }
-
-    // --- Game implementation ---
-    let bird, pipes, frameCount, running=false, gameOver=false, lastTime=0, score=0, bestScore=Number(localStorage.getItem('flappy-best')||0);
-    bestScoreEl.textContent = bestScore;
-
-    function resetState(){
-      fitCanvas();
-      bird = {x: Math.floor(canvas.width*0.25), y: Math.floor(canvas.height/2), vy:0, radius:16, rotation:0};
-      pipes = [];
-      frameCount = 0; score = 0; gameOver=false;
-    }
-
-    function spawnPipe(){
-      const gapSize = settings.difficulty==='easy' ? Math.floor(canvas.height*0.26) : settings.difficulty==='hard' ? Math.floor(canvas.height*0.18) : Math.floor(canvas.height*0.22);
-      const topHeight = 60 + Math.random()*(canvas.height - gapSize - 140);
-      pipes.push({x: canvas.width + 20, top: topHeight, gap: gapSize, passed:false});
-    }
-
-    function initGame(){
-      resetState(); running=true; lastTime = performance.now();
-      requestAnimationFrame(loop);
-    }
-
-    function endGame(){ running=false; pauseOverlay.style.display='none'; overlay.style.display='flex';
-      if(score>bestScore){ bestScore=score; localStorage.setItem('flappy-best',bestScore); bestScoreEl.textContent=bestScore; }
-    }
-
-    function pauseGame(){ running=false; pauseTitle.textContent='Paused'; pauseMsg.textContent = `Score: ${score}`; pauseOverlay.style.display='flex'; }
-    function resumeGame(){ pauseOverlay.style.display='none'; running=true; lastTime = performance.now(); requestAnimationFrame(loop); }
-
-    // input
-    function flap(){ if(gameOver) return; bird.vy = -6.8; beep(880,0.06); }
-    window.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ e.preventDefault(); if(!running){ initGame(); overlay.style.display='none' } flap(); } if(e.key==='p'){ if(running) pauseGame(); else resumeGame(); } });
-    canvas.addEventListener('mousedown', ()=>{ if(!running){ initGame(); overlay.style.display='none' } flap(); });
-    canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); if(!running){ initGame(); overlay.style.display='none' } flap(); },{passive:false});
-
-    // collision detection
-    function intersectsPipe(b, p){
-      // top pipe box
-      const pipeX = p.x, pipeW = 60;
-      if(b.x + b.radius > pipeX && b.x - b.radius < pipeX + pipeW){
-        if(b.y - b.radius < p.top || b.y + b.radius > p.top + p.gap) return true;
-      }
-      return false;
-    }
-
-    function loop(now){
-      const dt = Math.min(40, now - lastTime); lastTime = now;
-      update(dt/16); draw();
-      if(running) requestAnimationFrame(loop);
-    }
-
-    // update physics
-    function update(delta){
-      frameCount++;
-      // spawn pipes periodically
-      if(frameCount % Math.max(30, 90 - (settings.difficulty==='hard'?10:0)) === 0){ spawnPipe(); }
-      // move pipes
-      const speed = 2 + (settings.difficulty==='hard'?1.2: settings.difficulty==='easy'?0.6:0.9);
-      for(let i=pipes.length-1;i>=0;i--){
-        pipes[i].x -= speed * (delta);
-        if(!pipes[i].passed && pipes[i].x + 30 < bird.x){ pipes[i].passed = true; score++; beep(660,0.03); scoreDisplay.textContent=score; }
-        if(pipes[i].x < -120) pipes.splice(i,1);
-      }
-      // gravity & movement
-      const gravity = 0.35 * (delta);
-      bird.vy += gravity * 6;
-      bird.y += bird.vy * (delta);
-      bird.rotation = Math.max(-0.6, Math.min(1.2, bird.vy * 0.06));
-
-      // floor & ceiling collisions
-      if(bird.y + bird.radius > canvas.height - 24){ gameOver = true; running=false; pauseTitle.textContent='Game Over'; pauseMsg.textContent=`Score: ${score}`; pauseOverlay.style.display='flex'; beep(220,0.2); if(score>bestScore){bestScore=score;localStorage.setItem('flappy-best',bestScore);bestScoreEl.textContent=bestScore;} }
-      if(bird.y - bird.radius < 0){ bird.y = bird.radius; bird.vy = 0; }
-
-      // pipe collisions
-      for(const p of pipes){ if(intersectsPipe(bird,p)){ gameOver=true; running=false; pauseTitle.textContent='Game Over'; pauseMsg.textContent=`Score: ${score}`; pauseOverlay.style.display='flex'; beep(220,0.2); if(score>bestScore){bestScore=score;localStorage.setItem('flappy-best',bestScore);bestScoreEl.textContent=bestScore;} break; } }
-    }
-
-    // draw functions
-    function draw(){
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-
-      // background gradient
-      const g = ctx.createLinearGradient(0,0,0,canvas.height);
-      g.addColorStop(0,'#9be7ff'); g.addColorStop(0.6,'#bfeaff'); g.addColorStop(1,'#e8f8ff');
-      ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
-
-      // distant clouds
-      for(let i=0;i<3;i++){
-        const cx = (i*240 + (frameCount*0.2)) % (canvas.width+200) - 100;
-        ctx.globalAlpha = 0.6; ctx.fillStyle='#ffffff'; roundedRect(ctx, cx, 50 + i*32, 110, 36, 20); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-
-      // pipes
-      for(const p of pipes){ drawPipe(p); }
-
-      // ground
-      ctx.fillStyle = '#6fcf97';
-      ctx.fillRect(0, canvas.height-24, canvas.width, 24);
-      // decorative stripes
-      ctx.fillStyle = 'rgba(255,255,255,0.04)';
-      for(let i=0;i<canvas.width;i+=28) ctx.fillRect(i, canvas.height-24, 16, 6);
-
-      // bird
-      drawBird(bird);
-
-      // FPS if enabled
-      if(settings.showFps){ ctx.fillStyle='#123'; ctx.font='12px monospace'; ctx.fillText(`FPS: ${Math.round(1000/(performance.now()-lastTime||16))}`, 10, 14); }
-
-      // update score HUD
-      scoreDisplay.textContent = score;
-    }
-
-    function roundedRect(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-
-    function drawPipe(p){
-      const pipeW = 60; const capH = 18;
-      // top pipe body
-      ctx.fillStyle = '#2b9a77';
-      ctx.fillRect(p.x, 0, pipeW, p.top);
-      // top cap
-      ctx.fillStyle = '#227a5f'; roundedRect(ctx, p.x-2, p.top-capH, pipeW+4, capH,6); ctx.fill();
-      // bottom pipe
-      ctx.fillStyle = '#2b9a77'; ctx.fillRect(p.x, p.top+p.gap, pipeW, canvas.height - (p.top+p.gap) - 24);
-      // bottom cap
-      ctx.fillStyle = '#227a5f'; roundedRect(ctx, p.x-2, p.top+p.gap, pipeW+4, capH,6); ctx.fill();
-    }
-
-    function drawBird(b){
-      const skin = skins[selectedSkinIndex];
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rotation);
-      // wing animation
-      const wingOffset = Math.sin(frameCount*0.4) * 6;
-      // body
-      ctx.beginPath(); ctx.ellipse(0, 0, b.radius, b.radius*0.85, 0, 0, Math.PI*2); ctx.fillStyle = skin.colors.body; ctx.fill();
-      // eye
-      ctx.beginPath(); ctx.arc(-4,-2,3,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
-      // beak
-      ctx.beginPath(); ctx.moveTo(b.radius-2, 0); ctx.lineTo(b.radius+12, -5+wingOffset*0.06); ctx.lineTo(b.radius+12, 6+wingOffset*0.06); ctx.closePath(); ctx.fillStyle = skin.colors.beak; ctx.fill();
-      // wing
-      ctx.beginPath(); ctx.ellipse(-1,4,8,5, Math.PI*0.2, 0, Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fill();
-      ctx.restore();
-    }
-
-    // start with overlay visible (main menu)
-    overlay.style.display='flex'; pauseOverlay.style.display='none'; scoreDisplay.textContent = 0;
-
-    // nice little intro animation for menu
-    let animFrame;
-    function menuBreathe(){ ctx.clearRect(0,0,canvas.width,canvas.height); fitCanvas(); const g = ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'#9be7ff'); g.addColorStop(1,'#bfeaff'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle='#fff'; ctx.font='28px system-ui'; ctx.textAlign='center'; ctx.fillText('Flappy — Tap/Space to flap', canvas.width/2, canvas.height/2 - 40);
-      drawBird({x:canvas.width/2, y:canvas.height/2, radius:26, rotation:Math.sin(performance.now()/600)*0.6});
-      animFrame = requestAnimationFrame(menuBreathe);
-    }
-    menuBreathe();
-
-    // ensure skins UI is updated if changed elsewhere
-    setInterval(()=>updateSkinsUI(),400);
-
-    // expose some functions for debugging
-    window.__flappy = {start:initGame,pause:pauseGame,end:endGame};
+  function loop(){update();draw();if(running)requestAnimationFrame(loop);} 
+  reset();loop();
   </script>
 </body>
 </html>

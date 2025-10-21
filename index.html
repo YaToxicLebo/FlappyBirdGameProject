@@ -5,28 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flappy Deluxe</title>
 <style>
-:root {
-  --accent: #ffd166; --muted: #64748b; --ui: #ffffffcc;
-}
-* {box-sizing:border-box; font-family: 'Segoe UI', sans-serif; margin:0; padding:0;}
-body, html {height:100%; background:linear-gradient(#9be7ff,#bfeaff); overflow:hidden;}
-.page {position:absolute; inset:0; display:none; justify-content:center; align-items:center; flex-direction:column; transition: opacity 0.5s;}
-.page.active {display:flex; opacity:1;}
-button {padding:12px 24px; margin:8px; font-weight:700; border:none; border-radius:12px; cursor:pointer; transition: transform 0.2s;}
-button:hover{transform: scale(1.05);}
-.menu-title{font-size:2rem; margin-bottom:16px; color:#fff; text-shadow: 0 3px 6px rgba(0,0,0,0.3);}
-.card{background:var(--ui); padding:16px; border-radius:12px; display:flex; flex-direction:column; align-items:center;}
-#skins .skin{width:64px; height:64px; margin:6px; border-radius:10px; cursor:pointer; display:flex; justify-content:center; align-items:center; border:2px solid transparent;}
+:root{--accent:#ffd166;--muted:#64748b;--ui:#ffffffcc;}
+*{box-sizing:border-box;font-family:'Segoe UI',sans-serif;margin:0;padding:0;}
+body,html{height:100%;background:linear-gradient(#9be7ff,#bfeaff);overflow:hidden;}
+.page{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+.page.active{opacity:1;pointer-events:auto;}
+button{padding:12px 24px;margin:8px;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:transform 0.2s;}
+button:hover{transform:scale(1.05);}
+.menu-title{font-size:2rem;margin-bottom:16px;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);}
+.card{background:var(--ui);padding:16px;border-radius:12px;display:flex;flex-direction:column;align-items:center;}
+#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;}
 #skins .skin.selected{outline:3px solid #fff;}
-#themes .theme{width:80px; height:48px; border-radius:8px; margin:6px; cursor:pointer; display:flex; justify-content:center; align-items:center; font-weight:700; color:#111;}
+#themes .theme{width:80px;height:48px;border-radius:8px;margin:6px;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:700;color:#111;}
 #themes .theme.selected{outline:3px solid #fff;}
-#gameCanvas{background:transparent; display:block; margin:auto; border-radius:12px;}
-#backBtn{position:absolute; top:12px; right:12px; padding:8px 12px; border-radius:8px; background:var(--ui); border:none; cursor:pointer;}
+#gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;}
+#backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:2;}
+#scoreDisplay{position:absolute;top:12px;left:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:2;}
+.cloud{position:absolute;width:100px;height:60px;background:#fff;border-radius:50%;opacity:0.8;}
 </style>
 </head>
 <body>
 
-<!-- Pages -->
 <div id="menuPage" class="page active">
   <div class="menu-title">Flappy Deluxe</div>
   <div class="card">
@@ -56,21 +55,15 @@ button:hover{transform: scale(1.05);}
 <div id="gamePage" class="page">
   <canvas id="gameCanvas" width="800" height="500"></canvas>
   <button id="backBtn">Main Menu</button>
-  <div id="scoreDisplay" style="position:absolute;top:12px;left:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;">0</div>
+  <div id="scoreDisplay">0</div>
 </div>
 
 <script>
-// --- State & Storage ---
-const pages = {menu:document.getElementById('menuPage'),
-               skins:document.getElementById('skinsPage'),
-               settings:document.getElementById('settingsPage'),
-               game:document.getElementById('gamePage')};
+// --- Pages ---
+const pages={menu:document.getElementById('menuPage'),skins:document.getElementById('skinsPage'),settings:document.getElementById('settingsPage'),game:document.getElementById('gamePage')};
+function showPage(name){Object.values(pages).forEach(p=>p.classList.remove('active'));pages[name].classList.add('active');}
 
-function showPage(name){
-  Object.values(pages).forEach(p=>p.classList.remove('active'));
-  pages[name].classList.add('active');
-}
-
+// --- Skins & Themes ---
 const skinOptions=[
   {id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
   {id:'red',body:'#ff7b9c',beak:'#ffd166'},
@@ -82,7 +75,6 @@ const themeOptions=[
   {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
   {id:'night',top:'#0f172a',bottom:'#071230'}
 ];
-
 let settings={
   skin: localStorage.getItem('flappy-skin')||'yellow',
   theme: localStorage.getItem('flappy-theme')||'day',
@@ -91,26 +83,22 @@ let settings={
 };
 let bestScore=Number(localStorage.getItem('flappy-best')||0);
 
-// --- Build Skins & Themes UI ---
-const skinsContainer = document.getElementById('skins');
+const skinsContainer=document.getElementById('skins');
 skinOptions.forEach(s=>{
-  const b = document.createElement('div'); b.className='skin'; b.dataset.id=s.id;
-  b.style.background=s.body; b.style.display='flex'; b.style.alignItems='center'; b.style.justifyContent='center';
-  b.addEventListener('click',()=>{settings.skin=s.id; updateUI(); localStorage.setItem('flappy-skin',s.id);});
+  const b=document.createElement('div');b.className='skin';b.dataset.id=s.id;b.style.background=s.body;
+  b.addEventListener('click',()=>{settings.skin=s.id;updateUI();localStorage.setItem('flappy-skin',s.id);});
   skinsContainer.appendChild(b);
 });
-const themesContainer = document.getElementById('themes');
+const themesContainer=document.getElementById('themes');
 themeOptions.forEach(t=>{
-  const b = document.createElement('div'); b.className='theme'; b.dataset.id=t.id; b.style.background=`linear-gradient(180deg,${t.top},${t.bottom})`;
-  b.textContent=t.id; b.addEventListener('click',()=>{settings.theme=t.id; updateUI(); localStorage.setItem('flappy-theme',t.id);});
+  const b=document.createElement('div');b.className='theme';b.dataset.id=t.id;b.style.background=`linear-gradient(180deg,${t.top},${t.bottom})`;b.textContent=t.id;
+  b.addEventListener('click',()=>{settings.theme=t.id;updateUI();localStorage.setItem('flappy-theme',t.id);});
   themesContainer.appendChild(b);
 });
-const musicToggle = document.getElementById('musicToggle');
-const volumeSlider = document.getElementById('volumeSlider');
-musicToggle.checked = settings.music;
-volumeSlider.value = settings.volume;
-musicToggle.addEventListener('change',()=>{settings.music=musicToggle.checked; localStorage.setItem('flappy-music',settings.music);});
-volumeSlider.addEventListener('input',()=>{settings.volume=Number(volumeSlider.value); localStorage.setItem('flappy-volume',settings.volume);});
+const musicToggle=document.getElementById('musicToggle');musicToggle.checked=settings.music;
+const volumeSlider=document.getElementById('volumeSlider');volumeSlider.value=settings.volume;
+musicToggle.addEventListener('change',()=>{settings.music=musicToggle.checked;localStorage.setItem('flappy-music',settings.music);});
+volumeSlider.addEventListener('input',()=>{settings.volume=Number(volumeSlider.value);localStorage.setItem('flappy-volume',settings.volume);});
 function updateUI(){
   Array.from(skinsContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.skin));
   Array.from(themesContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));
@@ -118,22 +106,21 @@ function updateUI(){
 
 // --- Navigation ---
 document.getElementById('playBtn').addEventListener('click',()=>{showPage('game'); startGame();});
-document.getElementById('skinsBtn').addEventListener('click',()=>{showPage('skins'); updateUI();});
+document.getElementById('skinsBtn').addEventListener('click',()=>{showPage('skins');updateUI();});
 document.getElementById('settingsBtn').addEventListener('click',()=>{showPage('settings');});
 document.getElementById('skinsBack').addEventListener('click',()=>{showPage('menu');});
 document.getElementById('settingsBack').addEventListener('click',()=>{showPage('menu');});
-document.getElementById('backBtn').addEventListener('click',()=>{showPage('menu'); running=false;});
+document.getElementById('backBtn').addEventListener('click',()=>{showPage('menu');running=false;});
 
 // --- Game Variables ---
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-let width = canvas.width, height = canvas.height;
+const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');
+let width=canvas.width,height=canvas.height;
 let bird,pipes,frameCount,running=false,score=0;
 
 // --- Game Functions ---
-function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16}; pipes=[];frameCount=0;score=0;}
+function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16};pipes=[];frameCount=0;score=0;}
 function spawnPipe(){const gap=130;const top=60+Math.random()*(height-gap-120); pipes.push({x:width,top,gap,passed:false});}
-function flap(){bird.vy=-7; beep(880,0.06);}
+function flap(){bird.vy=-7;beep(880,0.06);}
 window.addEventListener('keydown',e=>{if(e.code==='Space'){flap();}});
 canvas.addEventListener('mousedown',()=>{flap();});
 canvas.addEventListener('touchstart',e=>{e.preventDefault(); flap();},{passive:false});
@@ -146,8 +133,8 @@ function update(){
   const gravity=0.35; bird.vy+=gravity; bird.y+=bird.vy;
   pipes.forEach(p=>{p.x-=2;if(!p.passed && p.x+30<bird.x){p.passed=true; score++; document.getElementById('scoreDisplay').textContent=score; beep(660,0.03);}});
   pipes=pipes.filter(p=>p.x>-60);
-  if(bird.y+bird.r>height-24){running=false; if(score>bestScore){bestScore=score; localStorage.setItem('flappy-best',bestScore);} alert('Game Over! Score: '+score);}
-  for(const p of pipes){if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+60){if(bird.y-bird.r<p.top || bird.y+bird.r>p.top+p.gap){running=false; if(score>bestScore){bestScore=score; localStorage.setItem('flappy-best',bestScore);} alert('Game Over! Score: '+score);}}}
+  if(bird.y+bird.r>height-24){running=false; if(score>bestScore){bestScore=score; localStorage.setItem('flappy-best',score);} alert('Game Over! Score: '+score);}
+  for(const p of pipes){if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+60){if(bird.y-bird.r<p.top || bird.y+bird.r>p.top+p.gap){running=false; if(score>bestScore){bestScore=score; localStorage.setItem('flappy-best',score);} alert('Game Over! Score: '+score);}}}
 }
 
 function draw(){
@@ -155,6 +142,8 @@ function draw(){
   // background
   const th=themeOptions.find(t=>t.id===settings.theme); 
   const g=ctx.createLinearGradient(0,0,0,height); g.addColorStop(0,th.top); g.addColorStop(1,th.bottom); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
+  // clouds
+  clouds.forEach(c=>{c.x+=c.speed;if(c.x>width+100)c.x=-120; ctx.beginPath(); ctx.ellipse(c.x,c.y,50,30,0,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.8)'; ctx.fill();});
   // pipes
   pipes.forEach(p=>{ctx.fillStyle='#2b9a77'; ctx.fillRect(p.x,0,60,p.top); ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);});
   // ground
@@ -168,7 +157,11 @@ function draw(){
   ctx.restore();
 }
 
-// init UI
+// --- Clouds ---
+let clouds=[];
+for(let i=0;i<8;i++){clouds.push({x:Math.random()*width,y:Math.random()*height*0.5,speed:0.2+Math.random()*0.3});}
+
+// --- Init UI ---
 updateUI();
 </script>
 </body>

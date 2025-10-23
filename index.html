@@ -1,3 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Deluxe</title>
+<style>
+:root{--accent:#ffd166;--muted:#64748b;--ui:#ffffffcc;}
+*{box-sizing:border-box;font-family:'Segoe UI',sans-serif;margin:0;padding:0;}
+body,html{height:100%;background:linear-gradient(#9be7ff,#bfeaff);overflow:hidden;}
+.page{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+.page.active{opacity:1;pointer-events:auto;}
+button{padding:12px 24px;margin:8px;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:transform 0.2s;}
+button:hover{transform:scale(1.05);}
+.menu-title{font-size:2rem;margin-bottom:16px;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);}
+.card{background:var(--ui);padding:16px;border-radius:12px;display:flex;flex-direction:column;align-items:center;}
+#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;}
+#skins .skin.selected{outline:3px solid #fff;}
+#themes .theme{width:80px;height:48px;border-radius:8px;margin:6px;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:700;color:#111;}
+#themes .theme.selected{outline:3px solid #fff;}
+#gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;}
+#backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:2;}
+#scoreDisplay{position:absolute;top:12px;left:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:2;}
+.cloud{position:absolute;width:100px;height:60px;background:#fff;border-radius:50%;opacity:0.8;}
+</style>
+</head>
+<body>
+
+<!-- Main Menu -->
+<div id="menuPage" class="page active">
+  <div class="menu-title">Flappy Deluxe</div>
+  <div class="card">
+    <button id="playBtn">Play</button>
+    <button id="skinsBtn">Bird Skins</button>
+    <button id="settingsBtn">Settings</button>
+  </div>
+</div>
+
+<!-- Skins Page -->
+<div id="skinsPage" class="page">
+  <div class="menu-title">Choose Bird Skin</div>
+  <div class="card" id="skins"></div>
+  <button id="skinsBack">Back</button>
+</div>
+
+<!-- Settings Page -->
+<div id="settingsPage" class="page">
+  <div class="menu-title">Settings</div>
+  <div class="card">
+    <div style="margin-bottom:8px;">Background Theme</div>
+    <div id="themes"></div>
+    <div style="margin-top:12px;">Music <input type="checkbox" id="musicToggle"></div>
+    <div style="margin-top:8px;">Volume <input type="range" min="0" max="1" step="0.01" id="volumeSlider"></div>
+  </div>
+  <button id="settingsBack">Back</button>
+</div>
+
+<!-- Game Page -->
+<div id="gamePage" class="page">
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <button id="backBtn">Main Menu</button>
+  <div id="scoreDisplay">0</div>
+</div>
+
 <script>
 // --- Pages ---
 const pages={menu:document.getElementById('menuPage'),skins:document.getElementById('skinsPage'),settings:document.getElementById('settingsPage'),game:document.getElementById('gamePage')};
@@ -110,7 +174,7 @@ function startGame(){
 function gameLoop(){
   if(!running) return;
   frameCount++;
-  if(frameCount%90===0) spawnPipe(); // pipes appear more often
+  if(frameCount%90===0) spawnPipe();
   update();
   draw();
   requestAnimationFrame(gameLoop);
@@ -121,7 +185,6 @@ function update(){
   bird.vy+=gravity;
   bird.y+=bird.vy;
 
-  // Move pipes
   for(const p of pipes){
     p.x-=3;
     if(!p.passed && p.x+60<bird.x){
@@ -133,7 +196,6 @@ function update(){
   }
   pipes=pipes.filter(p=>p.x>-80);
 
-  // Check collisions
   if(bird.y+bird.r>height-24 || bird.y-bird.r<0){
     endGame();
   }
@@ -218,3 +280,5 @@ function draw(){
 
 updateUI();
 </script>
+</body>
+</html>

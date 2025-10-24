@@ -24,6 +24,8 @@ button:hover{transform:scale(1.05);}
 #controls{position:absolute;top:12px;right:110px;display:flex;gap:8px;z-index:4;}
 .ctrl-btn{padding:8px 10px;border-radius:8px;border:none;background:var(--ui);cursor:pointer;font-weight:700;}
 .overlayPaused{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);color:#fff;font-size:28px;font-weight:800;z-index:5;border-radius:12px;}
+#difficultySelect{margin-top:8px;}
+#difficultySelect button{margin:4px 6px;padding:10px 18px;}
 </style>
 </head>
 <body>
@@ -32,6 +34,12 @@ button:hover{transform:scale(1.05);}
 <div id="menuPage" class="page active">
   <div class="menu-title">Flappy Deluxe</div>
   <div class="card">
+    <div style="margin-bottom:6px;font-weight:700;">Select Difficulty</div>
+    <div id="difficultySelect">
+      <button data-diff="easy">Easy</button>
+      <button data-diff="normal" class="selected">Normal</button>
+      <button data-diff="hard">Hard</button>
+    </div>
     <button id="playBtn">Play</button>
     <button id="skinsBtn">Bird Skins</button>
     <button id="settingsBtn">Settings</button>
@@ -66,313 +74,112 @@ button:hover{transform:scale(1.05);}
   </div>
   <button id="backBtn">Main Menu</button>
   <div id="scoreDisplay">0</div>
-  <!-- pause overlay (shown when paused) -->
   <div id="pauseOverlay" class="overlayPaused" style="display:none;">PAUSED</div>
 </div>
 
 <script>
 // --- Pages ---
-const pages = {
-  menu: document.getElementById('menuPage'),
-  skins: document.getElementById('skinsPage'),
-  settings: document.getElementById('settingsPage'),
-  game: document.getElementById('gamePage')
-};
-function showPage(name){
-  Object.values(pages).forEach(p => p.classList.remove('active'));
-  pages[name].classList.add('active');
-}
+const pages={menu:menuPage,skins:skinsPage,settings:settingsPage,game:gamePage};
+function showPage(name){Object.values(pages).forEach(p=>p.classList.remove('active'));pages[name].classList.add('active');}
 
 // --- Skins & Themes ---
-const skinOptions = [
-  {id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
-  {id:'red',body:'#ff7b9c',beak:'#ffd166'},
-  {id:'blue',body:'#5eead4',beak:'#ffd166'},
-  {id:'black',body:'#6b7280',beak:'#d1d5db'}
-];
-const themeOptions = [
-  {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
-  {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
-  {id:'night',top:'#0f172a',bottom:'#071230'}
-];
-let settings = {
-  skin: localStorage.getItem('flappy-skin') || 'yellow',
-  theme: localStorage.getItem('flappy-theme') || 'day',
-  music: localStorage.getItem('flappy-music') === 'true',
-  volume: Number(localStorage.getItem('flappy-volume') || 0.8)
-};
-let bestScore = Number(localStorage.getItem('flappy-best') || 0);
+const skinOptions=[{id:'yellow',body:'#ffd166',beak:'#ff6b6b'},{id:'red',body:'#ff7b9c',beak:'#ffd166'},{id:'blue',body:'#5eead4',beak:'#ffd166'},{id:'black',body:'#6b7280',beak:'#d1d5db'}];
+const themeOptions=[{id:'day',top:'#9be7ff',bottom:'#bfeaff'},{id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},{id:'night',top:'#0f172a',bottom:'#071230'}];
+let settings={skin:localStorage.getItem('flappy-skin')||'yellow',theme:localStorage.getItem('flappy-theme')||'day',music:localStorage.getItem('flappy-music')==='true',volume:Number(localStorage.getItem('flappy-volume')||0.8)};
+let bestScore=Number(localStorage.getItem('flappy-best')||0);
 
-const skinsContainer = document.getElementById('skins');
-skinOptions.forEach(s => {
-  const b = document.createElement('div');
-  b.className='skin'; b.dataset.id = s.id; b.style.background = s.body;
-  b.addEventListener('click', () => { settings.skin = s.id; updateUI(); localStorage.setItem('flappy-skin', s.id); });
-  skinsContainer.appendChild(b);
+const skinsContainer=document.getElementById('skins');
+skinOptions.forEach(s=>{const b=document.createElement('div');b.className='skin';b.dataset.id=s.id;b.style.background=s.body;b.addEventListener('click',()=>{settings.skin=s.id;updateUI();localStorage.setItem('flappy-skin',s.id);});skinsContainer.appendChild(b);});
+const themesContainer=document.getElementById('themes');
+themeOptions.forEach(t=>{const b=document.createElement('div');b.className='theme';b.dataset.id=t.id;b.style.background=`linear-gradient(180deg,${t.top},${t.bottom})`;b.textContent=t.id;b.addEventListener('click',()=>{settings.theme=t.id;updateUI();localStorage.setItem('flappy-theme',t.id);});themesContainer.appendChild(b);});
+const musicToggle=document.getElementById('musicToggle');musicToggle.checked=settings.music;
+const volumeSlider=document.getElementById('volumeSlider');volumeSlider.value=settings.volume;
+musicToggle.addEventListener('change',()=>{settings.music=musicToggle.checked;localStorage.setItem('flappy-music',settings.music);});
+volumeSlider.addEventListener('input',()=>{settings.volume=Number(volumeSlider.value);localStorage.setItem('flappy-volume',settings.volume);});
+function updateUI(){Array.from(skinsContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.skin));Array.from(themesContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));}
+
+// --- Difficulty ---
+let difficulty='normal';
+const diffButtons=document.querySelectorAll('#difficultySelect button');
+diffButtons.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    diffButtons.forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    difficulty=btn.dataset.diff;
+  });
 });
-
-const themesContainer = document.getElementById('themes');
-themeOptions.forEach(t => {
-  const b = document.createElement('div');
-  b.className='theme'; b.dataset.id = t.id;
-  b.style.background = `linear-gradient(180deg,${t.top},${t.bottom})`;
-  b.textContent = t.id;
-  b.addEventListener('click', () => { settings.theme = t.id; updateUI(); localStorage.setItem('flappy-theme', t.id); });
-  themesContainer.appendChild(b);
-});
-
-const musicToggle = document.getElementById('musicToggle'); musicToggle.checked = settings.music;
-const volumeSlider = document.getElementById('volumeSlider'); volumeSlider.value = settings.volume;
-musicToggle.addEventListener('change', ()=>{ settings.music = musicToggle.checked; localStorage.setItem('flappy-music', settings.music); });
-volumeSlider.addEventListener('input', ()=>{ settings.volume = Number(volumeSlider.value); localStorage.setItem('flappy-volume', settings.volume); });
-
-function updateUI(){
-  Array.from(skinsContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.skin));
-  Array.from(themesContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.theme));
-}
 
 // --- Navigation ---
-document.getElementById('playBtn').addEventListener('click', ()=>{ showPage('game'); startGame(); });
-document.getElementById('skinsBtn').addEventListener('click', ()=>{ showPage('skins'); updateUI(); });
-document.getElementById('settingsBtn').addEventListener('click', ()=>{ showPage('settings'); });
-document.getElementById('skinsBack').addEventListener('click', ()=>{ showPage('menu'); });
-document.getElementById('settingsBack').addEventListener('click', ()=>{ showPage('menu'); });
-document.getElementById('backBtn').addEventListener('click', ()=>{ stopAndExitToMenu(); });
+playBtn.addEventListener('click',()=>{showPage('game');startGame();});
+skinsBtn.addEventListener('click',()=>{showPage('skins');updateUI();});
+settingsBtn.addEventListener('click',()=>{showPage('settings');});
+skinsBack.addEventListener('click',()=>{showPage('menu');});
+settingsBack.addEventListener('click',()=>{showPage('menu');});
+backBtn.addEventListener('click',()=>{stopAndExitToMenu();});
 
-// --- Canvas & Game vars ---
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const width = canvas.width, height = canvas.height;
-let bird, pipes, frameCount, score, running = false, paused = false;
-let clouds = [];
-let animationId = null;
+// --- Canvas ---
+const canvas=gameCanvas,ctx=canvas.getContext('2d');
+const width=canvas.width,height=canvas.height;
+let bird,pipes,coins,frameCount,score,running=false,paused=false,animationId=null;
+let clouds=[];
+for(let i=0;i<8;i++)clouds.push({x:Math.random()*width,y:Math.random()*height*0.5,speed:0.2+Math.random()*0.3});
 
-// init clouds
-for(let i=0;i<8;i++){
-  clouds.push({x:Math.random()*width, y:Math.random()*height*0.5, speed:0.2+Math.random()*0.3});
-}
+// --- Sound ---
+function beep(freq,len=0.05){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=settings.volume*0.12;o.frequency.value=freq;o.start();setTimeout(()=>{o.stop();a.close();},len*1000);}catch(e){}}
 
-// --- Controls / buttons ---
-const pauseBtn = document.getElementById('pauseBtn');
-const restartBtn = document.getElementById('restartBtn');
-const pauseOverlay = document.getElementById('pauseOverlay');
+// --- Input ---
+function flap(){if(!running)startGame();bird.vy=Math.max(bird.vy,-9);bird.vy+=-7.6;if(bird.vy<-10)bird.vy=-10;beep(880,0.045);}
+window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();flap();}});
+canvas.addEventListener('mousedown',()=>{flap();});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
 
-pauseBtn.addEventListener('click', ()=>{ togglePause(); });
-restartBtn.addEventListener('click', ()=>{ startGame(); });
-
-// --- Sound helper ---
-function beep(freq,len=0.05){
-  try{
-    const a = new (window.AudioContext||window.webkitAudioContext)();
-    const o = a.createOscillator(), g = a.createGain();
-    o.connect(g); g.connect(a.destination);
-    g.gain.value = settings.volume * 0.12;
-    o.frequency.value = freq; o.start();
-    setTimeout(()=>{ o.stop(); a.close(); }, len*1000);
-  }catch(e){}
-}
-
-// --- Flap & input ---
-function flap(){
-  // start the game on first flap if it hasn't started
-  if(!running){
-    startGame();
-  }
-  // strong, snappy impulse
-  bird.vy = Math.max(bird.vy, -9); // ensure not already extremely negative
-  bird.vy += -7.6; // apply impulse (works well with gravity below)
-  // limit upward velocity so repeated taps don't go crazy
-  if(bird.vy < -10) bird.vy = -10;
-  beep(880,0.045);
-}
-
-// single listeners (added once)
-window.addEventListener('keydown', (e)=>{
-  if(e.code === 'Space'){
-    e.preventDefault();
-    flap();
-  }
-});
-canvas.addEventListener('mousedown', ()=>{ flap(); });
-canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); flap(); }, {passive:false});
-
-// --- Game lifecycle ---
-function resetGame(){
-  bird = { x: width/4, y: height/2, vy: 0, r: 16 };
-  pipes = [];
-  frameCount = 0;
-  score = 0;
-  document.getElementById('scoreDisplay').textContent = score;
-  paused = false;
-  pauseOverlay.style.display = 'none';
-  pauseBtn.textContent = 'Pause';
-}
-
-function spawnPipe(){
-  const gap = 140;
-  const top = 50 + Math.random()*(height - gap - 150);
-  pipes.push({ x: width, top, gap, passed: false });
-}
-
-function startGame(){
-  // cancel any existing rAF to avoid duplicates
-  if(animationId) cancelAnimationFrame(animationId);
-  resetGame();
-  running = true;
-  animationId = requestAnimationFrame(gameLoop);
-}
-
-function stopAndExitToMenu(){
-  running = false;
-  paused = false;
-  if(animationId) cancelAnimationFrame(animationId);
-  showPage('menu');
-}
-
-function togglePause(){
-  if(!running) return; // nothing to pause
-  paused = !paused;
-  if(paused){
-    // stop loop
-    if(animationId) cancelAnimationFrame(animationId);
-    pauseOverlay.style.display = 'flex';
-    pauseBtn.textContent = 'Resume';
-  } else {
-    // resume
-    pauseOverlay.style.display = 'none';
-    pauseBtn.textContent = 'Pause';
-    animationId = requestAnimationFrame(gameLoop);
+// --- Difficulty settings ---
+function getDiffSettings(){
+  switch(difficulty){
+    case 'easy': return {pipeSpeed:2.5,gap:160,coinChance:0.5};
+    case 'hard': return {pipeSpeed:4.2,gap:110,coinChance:0.25};
+    default: return {pipeSpeed:3.2,gap:140,coinChance:0.35};
   }
 }
 
-function endGame(){
-  running = false;
-  if(animationId) cancelAnimationFrame(animationId);
-  if(score > bestScore){
-    bestScore = score;
-    localStorage.setItem('flappy-best', bestScore);
-  }
-  // slight delay to allow UI update
-  setTimeout(()=>{
-    alert(`Game Over!\nScore: ${score}\nBest: ${bestScore}`);
-    showPage('menu');
-  }, 80);
-}
+// --- Game functions ---
+function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16};pipes=[];coins=[];frameCount=0;score=0;scoreDisplay.textContent=score;paused=false;pauseOverlay.style.display='none';pauseBtn.textContent='Pause';}
+function spawnPipe(){const d=getDiffSettings();const top=50+Math.random()*(height-d.gap-150);pipes.push({x:width,top,gap:d.gap,passed:false});if(Math.random()<d.coinChance){coins.push({x:width+30,y:top+d.gap/2,spin:Math.random()*Math.PI*2});}}
+function startGame(){if(animationId)cancelAnimationFrame(animationId);resetGame();running=true;animationId=requestAnimationFrame(gameLoop);}
+function stopAndExitToMenu(){running=false;paused=false;if(animationId)cancelAnimationFrame(animationId);showPage('menu');}
+function togglePause(){if(!running)return;paused=!paused;if(paused){if(animationId)cancelAnimationFrame(animationId);pauseOverlay.style.display='flex';pauseBtn.textContent='Resume';}else{pauseOverlay.style.display='none';pauseBtn.textContent='Pause';animationId=requestAnimationFrame(gameLoop);}}
+function endGame(){running=false;if(animationId)cancelAnimationFrame(animationId);if(score>bestScore){bestScore=score;localStorage.setItem('flappy-best',bestScore);}setTimeout(()=>{alert(`Game Over!\nScore: ${score}\nBest: ${bestScore}`);showPage('menu');},100);}
+pauseBtn.addEventListener('click',()=>{togglePause();});
+restartBtn.addEventListener('click',()=>{startGame();});
 
-// --- Physics tuning notes ---
-// gravity and caps chosen for responsive, snappy feel
-const GRAVITY = 0.45;
-const MAX_FALL = 12;
+// --- Physics constants ---
+const GRAVITY=0.45,MAX_FALL=12;
 
-// --- Game loop ---
-function gameLoop(){
-  if(!running || paused) return;
-  frameCount++;
-  // spawn pipes at interval
-  if(frameCount % 90 === 0) spawnPipe();
-
-  // physics
-  bird.vy += GRAVITY;
-  if(bird.vy > MAX_FALL) bird.vy = MAX_FALL;
-  bird.y += bird.vy;
-
-  // move pipes
-  for(const p of pipes){
-    p.x -= 3.2;
-    if(!p.passed && p.x + 60 < bird.x){
-      p.passed = true;
-      score++;
-      document.getElementById('scoreDisplay').textContent = score;
-      beep(660,0.03);
-    }
-  }
-  pipes = pipes.filter(p => p.x > -80);
-
-  // collisions / ground / ceiling
-  if(bird.y + bird.r > height - 24 || bird.y - bird.r < 0){
-    endGame();
-    return;
-  }
-  for(const p of pipes){
-    if(bird.x + bird.r > p.x && bird.x - bird.r < p.x + 60){
-      if(bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap){
-        endGame();
-        return;
-      }
-    }
-  }
-
-  draw();
-  animationId = requestAnimationFrame(gameLoop);
-}
+// --- Loop ---
+function gameLoop(){if(!running||paused)return;const d=getDiffSettings();frameCount++;if(frameCount%90===0)spawnPipe();bird.vy+=GRAVITY;if(bird.vy>MAX_FALL)bird.vy=MAX_FALL;bird.y+=bird.vy;pipes.forEach(p=>{p.x-=d.pipeSpeed;if(!p.passed&&p.x+60<bird.x){p.passed=true;score++;scoreDisplay.textContent=score;beep(660,0.03);}});pipes=pipes.filter(p=>p.x>-80);
+coins.forEach(c=>{c.x-=d.pipeSpeed;c.spin+=0.1;});
+coins=coins.filter(c=>c.x>-40);
+// collisions
+if(bird.y+bird.r>height-24||bird.y-bird.r<0){endGame();return;}
+for(const p of pipes){if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+60){if(bird.y-bird.r<p.top||bird.y+bird.r>p.top+p.gap){endGame();return;}}}
+// coin pickup
+for(let i=coins.length-1;i>=0;i--){const c=coins[i];const dx=bird.x-c.x,dy=bird.y-c.y;if(Math.hypot(dx,dy)<bird.r+10){coins.splice(i,1);score+=5;scoreDisplay.textContent=score;beep(1200,0.05);}}
+draw();animationId=requestAnimationFrame(gameLoop);}
 
 // --- Draw ---
-function draw(){
-  ctx.clearRect(0,0,width,height);
-
-  // background
-  const th = themeOptions.find(t => t.id === settings.theme);
-  const g = ctx.createLinearGradient(0,0,0,height);
-  g.addColorStop(0, th.top);
-  g.addColorStop(1, th.bottom);
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,width,height);
-
-  // clouds
-  clouds.forEach(c => {
-    c.x += c.speed;
-    if(c.x > width + 100) c.x = -120;
-    ctx.beginPath();
-    ctx.ellipse(c.x, c.y, 50, 30, 0, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fill();
-  });
-
-  // pipes
-  ctx.fillStyle = '#2b9a77';
-  pipes.forEach(p => {
-    ctx.fillRect(p.x, 0, 60, p.top);
-    ctx.fillRect(p.x, p.top + p.gap, 60, height - (p.top + p.gap) - 24);
-  });
-
-  // ground
-  ctx.fillStyle = '#6fcf97';
-  ctx.fillRect(0, height - 24, width, 24);
-
-  // bird (rotated slightly by velocity for feel)
-  const skin = skinOptions.find(s => s.id === settings.skin) || skinOptions[0];
-  const tilt = Math.max(-0.8, Math.min(0.8, bird.vy / 12)); // tilt factor
-  ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(tilt * 0.5);
-
-  // body
-  ctx.beginPath();
-  ctx.ellipse(0, 0, bird.r, bird.r * 0.85, 0, 0, Math.PI*2);
-  ctx.fillStyle = skin.body;
-  ctx.fill();
-
-  // eye
-  ctx.beginPath();
-  ctx.arc(-4, -2, 3, 0, Math.PI*2);
-  ctx.fillStyle = '#111';
-  ctx.fill();
-
-  // beak
-  ctx.beginPath();
-  ctx.moveTo(bird.r - 2, 0);
-  ctx.lineTo(bird.r + 12, -5);
-  ctx.lineTo(bird.r + 12, 6);
-  ctx.closePath();
-  ctx.fillStyle = skin.beak;
-  ctx.fill();
-
-  ctx.restore();
+function draw(){ctx.clearRect(0,0,width,height);const th=themeOptions.find(t=>t.id===settings.theme);const g=ctx.createLinearGradient(0,0,0,height);g.addColorStop(0,th.top);g.addColorStop(1,th.bottom);ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+clouds.forEach(c=>{c.x+=c.speed;if(c.x>width+100)c.x=-120;ctx.beginPath();ctx.ellipse(c.x,c.y,50,30,0,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.85)';ctx.fill();});
+ctx.fillStyle='#2b9a77';pipes.forEach(p=>{ctx.fillRect(p.x,0,60,p.top);ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);});
+ctx.fillStyle='#6fcf97';ctx.fillRect(0,height-24,width,24);
+const skin=skinOptions.find(s=>s.id===settings.skin)||skinOptions[0];const tilt=Math.max(-0.8,Math.min(0.8,bird.vy/12));ctx.save();ctx.translate(bird.x,bird.y);ctx.rotate(tilt*0.5);
+ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);ctx.fillStyle=skin.body;ctx.fill();
+ctx.beginPath();ctx.arc(-4,-2,3,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();
+ctx.beginPath();ctx.moveTo(bird.r-2,0);ctx.lineTo(bird.r+12,-5);ctx.lineTo(bird.r+12,6);ctx.closePath();ctx.fillStyle=skin.beak;ctx.fill();
+ctx.restore();
+// coins
+coins.forEach(c=>{ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.spin);ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fillStyle='#ffcf33';ctx.fill();ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.restore();});
 }
-
-// initialize UI states
 updateUI();
 </script>
-
 </body>
 </html>

@@ -21,11 +21,10 @@ button:hover{transform:scale(1.05);}
 #gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;box-shadow:0 8px 30px rgba(11,40,80,0.25);}
 #backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:4;}
 #scoreDisplay{position:absolute;top:12px;left:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:4;}
-#coinsDisplay{position:absolute;top:12px;left:120px;font-size:20px;font-weight:700;color:#ffd700;text-shadow:0 2px 4px #000;z-index:4;}
+#coinsDisplay{position:absolute;top:42px;left:12px;font-size:18px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:4;}
 #controls{position:absolute;top:12px;right:110px;display:flex;gap:8px;z-index:4;}
 .ctrl-btn{padding:8px 10px;border-radius:8px;border:none;background:var(--ui);cursor:pointer;font-weight:700;}
 .overlayPaused{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);color:#fff;font-size:28px;font-weight:800;z-index:5;border-radius:12px;}
-.coin{fill:gold;stroke:#ffd700;stroke-width:2;}
 </style>
 </head>
 <body>
@@ -36,15 +35,8 @@ button:hover{transform:scale(1.05);}
   <div class="card">
     <button id="playBtn">Play</button>
     <button id="skinsBtn">Bird Skins</button>
-    <button id="shopBtn">Shop</button>
+    <button id="shopBtn">Coin Shop</button>
     <button id="settingsBtn">Settings</button>
-    <div style="margin-top:12px;">Difficulty:
-      <select id="difficultySelect">
-        <option value="easy">Easy</option>
-        <option value="medium" selected>Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
   </div>
 </div>
 
@@ -57,9 +49,9 @@ button:hover{transform:scale(1.05);}
 
 <!-- Shop Page -->
 <div id="shopPage" class="page">
-  <div class="menu-title">Shop</div>
-  <div class="card" id="shopItems"></div>
-  <div id="coinTotal" style="margin-top:8px;font-weight:700;color:#ffd700;"></div>
+  <div class="menu-title">Coin Shop</div>
+  <div class="card" id="shopContainer"></div>
+  <div id="coinTotal" style="margin-top:8px;font-weight:700;"></div>
   <button id="shopBack">Back</button>
 </div>
 
@@ -71,6 +63,13 @@ button:hover{transform:scale(1.05);}
     <div id="themes"></div>
     <div style="margin-top:12px;">Music <input type="checkbox" id="musicToggle"></div>
     <div style="margin-top:8px;">Volume <input type="range" min="0" max="1" step="0.01" id="volumeSlider"></div>
+    <div style="margin-top:8px;">Difficulty
+      <select id="difficultySelect">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
   </div>
   <button id="settingsBack">Back</button>
 </div>
@@ -102,89 +101,49 @@ function showPage(name){
   pages[name].classList.add('active');
 }
 
-// --- Skins & Shop ---
+// --- Skins, Shop & Themes ---
 const skinOptions = [
-  {id:'yellow',body:'#ffd166',beak:'#ff6b6b',price:0},
-  {id:'red',body:'#ff7b9c',beak:'#ffd166',price:10},
-  {id:'blue',body:'#5eead4',beak:'#ffd166',price:15},
-  {id:'black',body:'#6b7280',beak:'#d1d5db',price:20}
+  {id:'yellow',body:'#ffd166',beak:'#ff6b6b', price:0},
+  {id:'red',body:'#ff7b9c',beak:'#ffd166', price:10},
+  {id:'blue',body:'#5eead4',beak:'#ffd166', price:15},
+  {id:'black',body:'#6b7280',beak:'#d1d5db', price:20}
 ];
 const themeOptions = [
   {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
   {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
   {id:'night',top:'#0f172a',bottom:'#071230'}
 ];
-
 let settings = {
   skin: localStorage.getItem('flappy-skin') || 'yellow',
   theme: localStorage.getItem('flappy-theme') || 'day',
   music: localStorage.getItem('flappy-music') === 'true',
   volume: Number(localStorage.getItem('flappy-volume') || 0.8),
-  coins: Number(localStorage.getItem('flappy-coins') || 0)
+  coins: Number(localStorage.getItem('flappy-coins')||0)
 };
 let bestScore = Number(localStorage.getItem('flappy-best') || 0);
 
-// --- Menu UI ---
 const skinsContainer = document.getElementById('skins');
+const shopContainer = document.getElementById('shopContainer');
+
 skinOptions.forEach(s => {
   const b = document.createElement('div');
   b.className='skin'; b.dataset.id = s.id; b.style.background = s.body;
   b.addEventListener('click', () => { 
-    if(settings.coins >= s.price){
-      settings.skin = s.id; 
-      updateUI(); 
-      localStorage.setItem('flappy-skin', s.id);
-    } else alert('Not enough coins!');
+    settings.skin = s.id; 
+    localStorage.setItem('flappy-skin', s.id);
+    updateUI(); 
   });
   skinsContainer.appendChild(b);
 });
-
-// Shop
-const shopContainer = document.getElementById('shopItems');
-function updateShop(){
-  shopContainer.innerHTML = '';
-  skinOptions.forEach(s=>{
-    const div = document.createElement('div');
-    div.style.margin='6px';
-    div.style.cursor='pointer';
-    div.style.fontWeight='700';
-    div.textContent = `${s.id} - ${s.price} coins`;
-    div.style.color = (settings.coins >= s.price)?'#111':'#888';
-    div.addEventListener('click', ()=>{
-      if(settings.coins >= s.price){
-        settings.skin=s.id; settings.coins -= s.price;
-        localStorage.setItem('flappy-skin', s.id);
-        localStorage.setItem('flappy-coins', settings.coins);
-        updateShop(); updateUI();
-      } else alert('Not enough coins!');
-    });
-    shopContainer.appendChild(div);
-  });
-  document.getElementById('coinTotal').textContent = `Coins: ${settings.coins}`;
-}
-
-// Themes
 const themesContainer = document.getElementById('themes');
 themeOptions.forEach(t => {
   const b = document.createElement('div');
   b.className='theme'; b.dataset.id = t.id;
   b.style.background = `linear-gradient(180deg,${t.top},${t.bottom})`;
   b.textContent = t.id;
-  b.addEventListener('click', () => { settings.theme = t.id; updateUI(); localStorage.setItem('flappy-theme', t.id); });
+  b.addEventListener('click', () => { settings.theme = t.id; localStorage.setItem('flappy-theme', t.id); updateUI(); });
   themesContainer.appendChild(b);
 });
-
-const musicToggle = document.getElementById('musicToggle'); musicToggle.checked = settings.music;
-const volumeSlider = document.getElementById('volumeSlider'); volumeSlider.value = settings.volume;
-musicToggle.addEventListener('change', ()=>{ settings.music = musicToggle.checked; localStorage.setItem('flappy-music', settings.music); });
-volumeSlider.addEventListener('input', ()=>{ settings.volume = Number(volumeSlider.value); localStorage.setItem('flappy-volume', settings.volume); });
-
-function updateUI(){
-  Array.from(skinsContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.skin));
-  Array.from(themesContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.theme));
-  updateShop();
-  document.getElementById('coinsDisplay').textContent = settings.coins;
-}
 
 // --- Navigation ---
 document.getElementById('playBtn').addEventListener('click', ()=>{ showPage('game'); startGame(); });
@@ -196,27 +155,58 @@ document.getElementById('shopBack').addEventListener('click', ()=>{ showPage('me
 document.getElementById('settingsBack').addEventListener('click', ()=>{ showPage('menu'); });
 document.getElementById('backBtn').addEventListener('click', ()=>{ stopAndExitToMenu(); });
 
-// Difficulty
-let difficulty = 'medium';
-document.getElementById('difficultySelect').value = difficulty;
-document.getElementById('difficultySelect').addEventListener('change', e=>{ difficulty=e.target.value; });
+let difficulty = document.getElementById('difficultySelect').value;
+document.getElementById('difficultySelect').addEventListener('change', e=>{
+  difficulty = e.target.value;
+});
 
 // --- Canvas & Game vars ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const width = canvas.width, height = canvas.height;
-let bird, pipes, frameCount, score, running=false, paused=false, animationId=null;
-let clouds = [];
-for(let i=0;i<8;i++){ clouds.push({x:Math.random()*width, y:Math.random()*height*0.5, speed:0.2+Math.random()*0.3}); }
+let bird, pipes, frameCount, score, running=false, paused=false;
+let clouds = [], animationId=null;
 
-// Controls
+// --- Controls ---
 const pauseBtn = document.getElementById('pauseBtn');
 const restartBtn = document.getElementById('restartBtn');
 const pauseOverlay = document.getElementById('pauseOverlay');
 pauseBtn.addEventListener('click', ()=>{ togglePause(); });
 restartBtn.addEventListener('click', ()=>{ startGame(); });
 
-// Sound
+// --- Coins & Shop ---
+function updateShop(){
+  shopContainer.innerHTML='';
+  skinOptions.forEach(s=>{
+    const div=document.createElement('div');
+    div.textContent=`${s.id} - ${s.price} coins`;
+    div.style.margin='6px'; div.style.cursor='pointer'; div.style.fontWeight='700';
+    div.style.color=(settings.coins>=s.price)?'#111':'#888';
+    div.addEventListener('click', ()=>{
+      if(settings.coins>=s.price){
+        settings.coins-=s.price;
+        settings.skin=s.id;
+        localStorage.setItem('flappy-skin', s.id);
+        localStorage.setItem('flappy-coins', settings.coins);
+        updateShop();
+        updateUI();
+      } else alert('Not enough coins!');
+    });
+    shopContainer.appendChild(div);
+  });
+  document.getElementById('coinTotal').textContent=`Coins: ${settings.coins}`;
+}
+
+// --- UI Update ---
+function updateUI(){
+  Array.from(skinsContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.skin));
+  Array.from(themesContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));
+  document.getElementById('coinsDisplay').textContent = settings.coins;
+  updateShop();
+}
+updateUI();
+
+// --- Sound ---
 function beep(freq,len=0.05){
   try{
     const a=new(window.AudioContext||window.webkitAudioContext)();
@@ -231,106 +221,116 @@ function beep(freq,len=0.05){
 // --- Flap ---
 function flap(){
   if(!running){ startGame(); }
-  bird.vy = Math.max(bird.vy, -10);
+  bird.vy=Math.max(bird.vy,-9);
   bird.vy += -8;
-  if(bird.vy<-12) bird.vy=-12;
+  if(bird.vy < -11) bird.vy=-11;
   beep(880,0.045);
 }
-window.addEventListener('keydown', e=>{if(e.code==='Space'){ e.preventDefault(); flap(); }});
-canvas.addEventListener('mousedown', ()=>{ flap(); });
-canvas.addEventListener('touchstart', e=>{ e.preventDefault(); flap(); }, {passive:false});
+window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault(); flap();}});
+canvas.addEventListener('mousedown',()=>{ flap(); });
+canvas.addEventListener('touchstart',e=>{ e.preventDefault(); flap(); },{passive:false});
 
 // --- Game lifecycle ---
 function resetGame(){
-  bird = { x: width/4, y: height/2, vy:0, r:16 };
-  pipes = []; frameCount=0; score=0; paused=false;
-  document.getElementById('scoreDisplay').textContent = score;
-  pauseOverlay.style.display='none';
+  bird={x:width/4,y:height/2,vy:0,r:16};
+  pipes=[]; frameCount=0; score=0;
+  document.getElementById('scoreDisplay').textContent=score;
+  paused=false; pauseOverlay.style.display='none';
 }
-
-function spawnPipe(){
-  let gap = 140, speed=3;
-  if(difficulty==='easy'){ gap=180; speed=2.5; }
-  if(difficulty==='medium'){ gap=130; speed=3.2; }
-  if(difficulty==='hard'){ gap=110; speed=4; }
-  const top=50+Math.random()*(height-gap-150);
-  pipes.push({x:width, top, gap, passed:false, speed, coin: Math.random()<0.4 });
-}
-
 function startGame(){
   if(animationId) cancelAnimationFrame(animationId);
-  resetGame(); running=true;
+  resetGame();
+  running=true;
   animationId=requestAnimationFrame(gameLoop);
 }
-
-function stopAndExitToMenu(){ running=false; paused=false; if(animationId) cancelAnimationFrame(animationId); showPage('menu'); }
-
+function stopAndExitToMenu(){
+  running=false; paused=false;
+  if(animationId) cancelAnimationFrame(animationId);
+  showPage('menu');
+}
 function togglePause(){
   if(!running) return;
   paused=!paused;
   if(paused){ if(animationId) cancelAnimationFrame(animationId); pauseOverlay.style.display='flex'; pauseBtn.textContent='Resume'; }
-  else { pauseOverlay.style.display='none'; pauseBtn.textContent='Pause'; animationId=requestAnimationFrame(gameLoop); }
+  else{ pauseOverlay.style.display='none'; pauseBtn.textContent='Pause'; animationId=requestAnimationFrame(gameLoop); }
 }
-
 function endGame(){
-  running=false;
-  if(animationId) cancelAnimationFrame(animationId);
+  running=false; if(animationId) cancelAnimationFrame(animationId);
   if(score>bestScore){ bestScore=score; localStorage.setItem('flappy-best',bestScore); }
   setTimeout(()=>{ alert(`Game Over!\nScore: ${score}\nBest: ${bestScore}`); showPage('menu'); },80);
 }
 
-// Physics
-const GRAVITY=0.5; const MAX_FALL=14;
+// --- Physics ---
+const GRAVITY=0.45;
+const MAX_FALL=12;
 
-// Challenges tracker
-let challengeCollectedCoins=0; let challengeScore10=false; let challengeCoins5=false; let challengeSurvive30=false;
-let runStartTime=0;
+// --- Pipes spawn ---
+function spawnPipe(){
+  let gap = 140;
+  if(difficulty==='easy') gap=170; else if(difficulty==='hard') gap=110;
+  const top=50+Math.random()*(height-gap-150);
+  pipes.push({x:width,top,gap,passed:false});
+}
 
-// Game loop
+// --- Game loop ---
 function gameLoop(){
   if(!running || paused) return;
   frameCount++;
-
-  // Spawn pipes
   if(frameCount%90===0) spawnPipe();
 
-  // Gravity
-  bird.vy += GRAVITY; if(bird.vy>MAX_FALL) bird.vy=MAX_FALL; bird.y+=bird.vy;
+  bird.vy+=GRAVITY;
+  if(bird.vy>MAX_FALL) bird.vy=MAX_FALL;
+  bird.y+=bird.vy;
 
-  // Move pipes & coins
-  pipes.forEach(p=>{
-    p.x -= p.speed;
-    if(!p.passed && p.x + 60 < bird.x){ p.passed=true; score++; document.getElementById('scoreDisplay').textContent=score; beep(660,0.03); }
-    if(p.coin && Math.abs(bird.x-(p.x+30))<16 && bird.y > p.top && bird.y < p.top+p.gap){
-      settings.coins++; p.coin=false; localStorage.setItem('flappy-coins', settings.coins); updateUI(); challengeCollectedCoins++;
-      beep(1000,0.05);
+  for(const p of pipes){
+    p.x -= 3.2;
+    if(!p.passed && p.x+60<bird.x){ p.passed=true; score++; settings.coins++; localStorage.setItem('flappy-coins',settings.coins); document.getElementById('scoreDisplay').textContent=score; beep(660,0.03); }
+  }
+  pipes=pipes.filter(p=>p.x>-80);
+
+  if(bird.y+bird.r>height-24 || bird.y-bird.r<0) { endGame(); return; }
+  for(const p of pipes){
+    if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+60){
+      if(bird.y-p.top<p.top || bird.y+bird.r>p.top+p.gap){ endGame(); return; }
     }
-  });
-  pipes = pipes.filter(p => p.x>-80);
-
-  // Ground / ceiling / pipe collisions
-  if(bird.y+bird.r>height-24 || bird.y-bird.r<0){ endGame(); return; }
-  for(const p of pipes){ if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+60){ if(bird.y-bird.r<p.top || bird.y+bird.r>p.top+p.gap){ endGame(); return; } } }
-
-  // Challenges
-  const elapsed = (performance.now()-runStartTime)/1000;
-  if(!challengeScore10 && score>=10){ settings.coins+=5; challengeScore10=true; alert("Challenge complete: Score 10 → +5 coins"); }
-  if(!challengeCoins5 && challengeCollectedCoins>=5){ settings.coins+=5; challengeCoins5=true; alert("Challenge complete: Collect 5 coins → +5 coins"); }
-  if(!challengeSurvive30 && elapsed>=30){ settings.coins+=5; challengeSurvive30=true; alert("Challenge complete: Survive 30s → +5 coins"); }
-  localStorage.setItem('flappy-coins', settings.coins);
-  updateUI();
+  }
 
   draw();
   animationId=requestAnimationFrame(gameLoop);
 }
 
-// Draw
+// --- Draw ---
 function draw(){
   ctx.clearRect(0,0,width,height);
 
   // background
-  const th = themeOptions.find(t=>t.id===settings.theme);
-  const g = ctx.createLinearGradient(0,0,0,height); g.addColorStop(0,th.top); g.addColorStop(1,th.bottom); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
+  const th=themeOptions.find(t=>t.id===settings.theme);
+  const g=ctx.createLinearGradient(0,0,0,height);
+  g.addColorStop(0,th.top); g.addColorStop(1,th.bottom); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
 
   // clouds
-  clouds.forEach(c=>
+  clouds.forEach(c=>{ c.x+=c.speed; if(c.x>width+100) c.x=-120; ctx.beginPath(); ctx.ellipse(c.x,c.y,50,30,0,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.fill(); });
+
+  // pipes
+  pipes.forEach(p=>{ ctx.fillStyle='#2b9a77'; ctx.fillRect(p.x,0,60,p.top); ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24); });
+
+  // ground
+  ctx.fillStyle='#6fcf97'; ctx.fillRect(0,height-24,width,24);
+
+  // bird
+  const skin=skinOptions.find(s=>s.id===settings.skin)||skinOptions[0];
+  const tilt=Math.max(-0.8, Math.min(0.8, bird.vy/12));
+  ctx.save(); ctx.translate(bird.x,bird.y); ctx.rotate(tilt*0.5);
+  ctx.beginPath(); ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2); ctx.fillStyle=skin.body; ctx.fill();
+  ctx.beginPath(); ctx.arc(-4,-2,3,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(bird.r-2,0); ctx.lineTo(bird.r+12,-5); ctx.lineTo(bird.r+12,6); ctx.closePath(); ctx.fillStyle=skin.beak; ctx.fill();
+  ctx.restore();
+}
+
+// --- Clouds init ---
+for(let i=0;i<8;i++){ clouds.push({x:Math.random()*width, y:Math.random()*height*0.5, speed:0.2+Math.random()*0.3}); }
+
+updateUI();
+</script>
+</body>
+</html>

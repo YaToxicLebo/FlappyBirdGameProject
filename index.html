@@ -14,18 +14,18 @@ button{padding:12px 24px;margin:8px;font-weight:700;border:none;border-radius:12
 button:hover{transform:scale(1.05);}
 .menu-title{font-size:2rem;margin-bottom:16px;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);}
 .card{background:var(--ui);padding:16px;border-radius:12px;display:flex;flex-direction:column;align-items:center;}
-#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;position:relative;}
+#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;}
 #skins .skin.selected{outline:3px solid #fff;}
-#skins .skin.locked::after{content:'🔒';position:absolute;top:2px;right:2px;font-size:16px;}
 #themes .theme{width:80px;height:48px;border-radius:8px;margin:6px;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:700;color:#111;}
 #themes .theme.selected{outline:3px solid #fff;}
 #gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;box-shadow:0 8px 30px rgba(11,40,80,0.25);}
 #backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:4;}
 #scoreDisplay{position:absolute;top:12px;left:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:4;}
-#coinDisplay{position:absolute;top:12px;right:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:4;}
+#coinsDisplay{position:absolute;top:12px;left:120px;font-size:20px;font-weight:700;color:#ffd700;text-shadow:0 2px 4px #000;z-index:4;}
 #controls{position:absolute;top:12px;right:110px;display:flex;gap:8px;z-index:4;}
 .ctrl-btn{padding:8px 10px;border-radius:8px;border:none;background:var(--ui);cursor:pointer;font-weight:700;}
 .overlayPaused{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);color:#fff;font-size:28px;font-weight:800;z-index:5;border-radius:12px;}
+.coin{fill:gold;stroke:#ffd700;stroke-width:2;}
 </style>
 </head>
 <body>
@@ -36,16 +36,31 @@ button:hover{transform:scale(1.05);}
   <div class="card">
     <button id="playBtn">Play</button>
     <button id="skinsBtn">Bird Skins</button>
+    <button id="shopBtn">Shop</button>
     <button id="settingsBtn">Settings</button>
+    <div style="margin-top:12px;">Difficulty:
+      <select id="difficultySelect">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
   </div>
 </div>
 
 <!-- Skins Page -->
 <div id="skinsPage" class="page">
-  <div class="menu-title">Bird Skins / Shop</div>
+  <div class="menu-title">Choose Bird Skin</div>
   <div class="card" id="skins"></div>
-  <div style="margin-top:8px;">Coins: <span id="shopCoins">0</span></div>
   <button id="skinsBack">Back</button>
+</div>
+
+<!-- Shop Page -->
+<div id="shopPage" class="page">
+  <div class="menu-title">Shop</div>
+  <div class="card" id="shopItems"></div>
+  <div id="coinTotal" style="margin-top:8px;font-weight:700;color:#ffd700;"></div>
+  <button id="shopBack">Back</button>
 </div>
 
 <!-- Settings Page -->
@@ -69,187 +84,253 @@ button:hover{transform:scale(1.05);}
   </div>
   <button id="backBtn">Main Menu</button>
   <div id="scoreDisplay">0</div>
-  <div id="coinDisplay">0 🪙</div>
-  <!-- pause overlay -->
+  <div id="coinsDisplay">0</div>
   <div id="pauseOverlay" class="overlayPaused" style="display:none;">PAUSED</div>
 </div>
 
 <script>
 // --- Pages ---
-const pages = { menu: document.getElementById('menuPage'), skins: document.getElementById('skinsPage'), settings: document.getElementById('settingsPage'), game: document.getElementById('gamePage')};
-function showPage(name){ Object.values(pages).forEach(p=>p.classList.remove('active')); pages[name].classList.add('active'); }
+const pages = {
+  menu: document.getElementById('menuPage'),
+  skins: document.getElementById('skinsPage'),
+  shop: document.getElementById('shopPage'),
+  settings: document.getElementById('settingsPage'),
+  game: document.getElementById('gamePage')
+};
+function showPage(name){
+  Object.values(pages).forEach(p => p.classList.remove('active'));
+  pages[name].classList.add('active');
+}
 
 // --- Skins & Shop ---
 const skinOptions = [
   {id:'yellow',body:'#ffd166',beak:'#ff6b6b',price:0},
-  {id:'red',body:'#ff7b9c',beak:'#ffd166',price:0},
-  {id:'blue',body:'#5eead4',beak:'#ffd166',price:0},
-  {id:'black',body:'#6b7280',beak:'#d1d5db',price:50}, // premium
-  {id:'gold',body:'#ffd700',beak:'#ff4500',price:100} // premium
+  {id:'red',body:'#ff7b9c',beak:'#ffd166',price:10},
+  {id:'blue',body:'#5eead4',beak:'#ffd166',price:15},
+  {id:'black',body:'#6b7280',beak:'#d1d5db',price:20}
 ];
 const themeOptions = [
   {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
   {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
   {id:'night',top:'#0f172a',bottom:'#071230'}
 ];
+
 let settings = {
   skin: localStorage.getItem('flappy-skin') || 'yellow',
   theme: localStorage.getItem('flappy-theme') || 'day',
-  music: localStorage.getItem('flappy-music')==='true',
-  volume: Number(localStorage.getItem('flappy-volume')||0.8)
+  music: localStorage.getItem('flappy-music') === 'true',
+  volume: Number(localStorage.getItem('flappy-volume') || 0.8),
+  coins: Number(localStorage.getItem('flappy-coins') || 0)
 };
-let bestScore = Number(localStorage.getItem('flappy-best')||0);
-let coins = Number(localStorage.getItem('flappy-coins')||0);
-let purchasedSkins = JSON.parse(localStorage.getItem('flappy-purchased')||'{}');
+let bestScore = Number(localStorage.getItem('flappy-best') || 0);
 
-// --- UI update ---
+// --- Menu UI ---
 const skinsContainer = document.getElementById('skins');
-function updateUI(){
-  Array.from(skinsContainer.children).forEach(c=>{
-    c.classList.toggle('selected',c.dataset.id===settings.skin);
-    const skin = skinOptions.find(s=>s.id===c.dataset.id);
-    c.classList.toggle('locked', skin.price>0 && !purchasedSkins[skin.id]);
-  });
-  Array.from(document.getElementById('themes').children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));
-  document.getElementById('shopCoins').textContent = coins;
-  document.getElementById('coinDisplay').textContent = coins+' 🪙';
-}
-
-// Create skin elements
-skinOptions.forEach(s=>{
-  const b = document.createElement('div'); b.className='skin'; b.dataset.id=s.id; b.style.background=s.body; b.textContent='';
-  b.addEventListener('click',()=>{
-    if(s.price>0 && !purchasedSkins[s.id]){
-      if(coins>=s.price){ coins-=s.price; purchasedSkins[s.id]=true; localStorage.setItem('flappy-coins',coins); localStorage.setItem('flappy-purchased',JSON.stringify(purchasedSkins)); settings.skin=s.id; updateUI(); } 
-      else { alert(`Need ${s.price} coins to buy this skin!`);}
-    } else { settings.skin=s.id; updateUI();}
-    localStorage.setItem('flappy-skin',settings.skin);
+skinOptions.forEach(s => {
+  const b = document.createElement('div');
+  b.className='skin'; b.dataset.id = s.id; b.style.background = s.body;
+  b.addEventListener('click', () => { 
+    if(settings.coins >= s.price){
+      settings.skin = s.id; 
+      updateUI(); 
+      localStorage.setItem('flappy-skin', s.id);
+    } else alert('Not enough coins!');
   });
   skinsContainer.appendChild(b);
 });
 
+// Shop
+const shopContainer = document.getElementById('shopItems');
+function updateShop(){
+  shopContainer.innerHTML = '';
+  skinOptions.forEach(s=>{
+    const div = document.createElement('div');
+    div.style.margin='6px';
+    div.style.cursor='pointer';
+    div.style.fontWeight='700';
+    div.textContent = `${s.id} - ${s.price} coins`;
+    div.style.color = (settings.coins >= s.price)?'#111':'#888';
+    div.addEventListener('click', ()=>{
+      if(settings.coins >= s.price){
+        settings.skin=s.id; settings.coins -= s.price;
+        localStorage.setItem('flappy-skin', s.id);
+        localStorage.setItem('flappy-coins', settings.coins);
+        updateShop(); updateUI();
+      } else alert('Not enough coins!');
+    });
+    shopContainer.appendChild(div);
+  });
+  document.getElementById('coinTotal').textContent = `Coins: ${settings.coins}`;
+}
+
 // Themes
 const themesContainer = document.getElementById('themes');
-themeOptions.forEach(t=>{
-  const b = document.createElement('div'); b.className='theme'; b.dataset.id=t.id;
-  b.style.background = `linear-gradient(180deg,${t.top},${t.bottom})`; b.textContent=t.id;
-  b.addEventListener('click',()=>{settings.theme=t.id;updateUI(); localStorage.setItem('flappy-theme',t.id);});
+themeOptions.forEach(t => {
+  const b = document.createElement('div');
+  b.className='theme'; b.dataset.id = t.id;
+  b.style.background = `linear-gradient(180deg,${t.top},${t.bottom})`;
+  b.textContent = t.id;
+  b.addEventListener('click', () => { settings.theme = t.id; updateUI(); localStorage.setItem('flappy-theme', t.id); });
   themesContainer.appendChild(b);
 });
 
-// Music/volume
-const musicToggle=document.getElementById('musicToggle'); musicToggle.checked=settings.music;
-const volumeSlider=document.getElementById('volumeSlider'); volumeSlider.value=settings.volume;
-musicToggle.addEventListener('change',()=>{settings.music=musicToggle.checked; localStorage.setItem('flappy-music',settings.music);});
-volumeSlider.addEventListener('input',()=>{settings.volume=Number(volumeSlider.value); localStorage.setItem('flappy-volume',settings.volume);});
+const musicToggle = document.getElementById('musicToggle'); musicToggle.checked = settings.music;
+const volumeSlider = document.getElementById('volumeSlider'); volumeSlider.value = settings.volume;
+musicToggle.addEventListener('change', ()=>{ settings.music = musicToggle.checked; localStorage.setItem('flappy-music', settings.music); });
+volumeSlider.addEventListener('input', ()=>{ settings.volume = Number(volumeSlider.value); localStorage.setItem('flappy-volume', settings.volume); });
+
+function updateUI(){
+  Array.from(skinsContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.skin));
+  Array.from(themesContainer.children).forEach(c => c.classList.toggle('selected', c.dataset.id === settings.theme));
+  updateShop();
+  document.getElementById('coinsDisplay').textContent = settings.coins;
+}
 
 // --- Navigation ---
-document.getElementById('playBtn').addEventListener('click',()=>{showPage('game'); startGame();});
-document.getElementById('skinsBtn').addEventListener('click',()=>{showPage('skins'); updateUI();});
-document.getElementById('settingsBtn').addEventListener('click',()=>{showPage('settings');});
-document.getElementById('skinsBack').addEventListener('click',()=>{showPage('menu');});
-document.getElementById('settingsBack').addEventListener('click',()=>{showPage('menu');});
-document.getElementById('backBtn').addEventListener('click',()=>{ stopAndExitToMenu(); });
+document.getElementById('playBtn').addEventListener('click', ()=>{ showPage('game'); startGame(); });
+document.getElementById('skinsBtn').addEventListener('click', ()=>{ showPage('skins'); updateUI(); });
+document.getElementById('shopBtn').addEventListener('click', ()=>{ showPage('shop'); updateUI(); });
+document.getElementById('settingsBtn').addEventListener('click', ()=>{ showPage('settings'); });
+document.getElementById('skinsBack').addEventListener('click', ()=>{ showPage('menu'); });
+document.getElementById('shopBack').addEventListener('click', ()=>{ showPage('menu'); });
+document.getElementById('settingsBack').addEventListener('click', ()=>{ showPage('menu'); });
+document.getElementById('backBtn').addEventListener('click', ()=>{ stopAndExitToMenu(); });
 
-// --- Canvas & Game ---
+// Difficulty
+let difficulty = 'medium';
+document.getElementById('difficultySelect').value = difficulty;
+document.getElementById('difficultySelect').addEventListener('change', e=>{ difficulty=e.target.value; });
+
+// --- Canvas & Game vars ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const width=canvas.width, height=canvas.height;
-let bird, pipes, coinsOnScreen=[], frameCount, score, running=false, paused=false, animationId=null;
-let clouds=[];
-for(let i=0;i<8;i++){ clouds.push({x:Math.random()*width, y:Math.random()*height*0.5, speed:0.2+Math.random()*0.3});}
+const width = canvas.width, height = canvas.height;
+let bird, pipes, frameCount, score, running=false, paused=false, animationId=null;
+let clouds = [];
+for(let i=0;i<8;i++){ clouds.push({x:Math.random()*width, y:Math.random()*height*0.5, speed:0.2+Math.random()*0.3}); }
 
-// --- Controls ---
-const pauseBtn=document.getElementById('pauseBtn');
-const restartBtn=document.getElementById('restartBtn');
-const pauseOverlay=document.getElementById('pauseOverlay');
-pauseBtn.addEventListener('click',()=>{togglePause();});
-restartBtn.addEventListener('click',()=>{startGame();});
+// Controls
+const pauseBtn = document.getElementById('pauseBtn');
+const restartBtn = document.getElementById('restartBtn');
+const pauseOverlay = document.getElementById('pauseOverlay');
+pauseBtn.addEventListener('click', ()=>{ togglePause(); });
+restartBtn.addEventListener('click', ()=>{ startGame(); });
 
-// --- Sound ---
-function beep(freq,len=0.05){try{const a=new(window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=settings.volume*0.12;o.frequency.value=freq;o.start();setTimeout(()=>{o.stop();a.close();},len*1000);}catch(e){}}
+// Sound
+function beep(freq,len=0.05){
+  try{
+    const a=new(window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(), g=a.createGain();
+    o.connect(g); g.connect(a.destination);
+    g.gain.value=settings.volume*0.12;
+    o.frequency.value=freq; o.start();
+    setTimeout(()=>{ o.stop(); a.close(); }, len*1000);
+  }catch(e){}
+}
 
-// --- Physics ---
-const GRAVITY=0.5, FLAP_STRENGTH=-9, MAX_FALL=14;
-
-// --- Input ---
-function flap(){ if(!running){startGame();} bird.vy=FLAP_STRENGTH; beep(880,0.045);}
-window.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault(); flap();}});
-canvas.addEventListener('mousedown',()=>{ flap(); });
-canvas.addEventListener('touchstart',e=>{ e.preventDefault(); flap(); },{passive:false});
+// --- Flap ---
+function flap(){
+  if(!running){ startGame(); }
+  bird.vy = Math.max(bird.vy, -10);
+  bird.vy += -8;
+  if(bird.vy<-12) bird.vy=-12;
+  beep(880,0.045);
+}
+window.addEventListener('keydown', e=>{if(e.code==='Space'){ e.preventDefault(); flap(); }});
+canvas.addEventListener('mousedown', ()=>{ flap(); });
+canvas.addEventListener('touchstart', e=>{ e.preventDefault(); flap(); }, {passive:false});
 
 // --- Game lifecycle ---
 function resetGame(){
-  bird={x:width/4,y:height/2,vy:0,r:16};
-  pipes=[]; coinsOnScreen=[]; frameCount=0; score=0; paused=false; pauseOverlay.style.display='none';
-  document.getElementById('scoreDisplay').textContent=score;
-  updateUI();
+  bird = { x: width/4, y: height/2, vy:0, r:16 };
+  pipes = []; frameCount=0; score=0; paused=false;
+  document.getElementById('scoreDisplay').textContent = score;
+  pauseOverlay.style.display='none';
 }
-function spawnPipe(){
-  const gap=140; const top=50+Math.random()*(height-gap-150);
-  pipes.push({x:width, top, gap, passed:false});
-  // spawn coin in middle
-  const coinY = top+gap/2; coinsOnScreen.push({x:width+30,y:coinY,r:8,collected:false});
-}
-function startGame(){ if(animationId) cancelAnimationFrame(animationId); resetGame(); running=true; animationId=requestAnimationFrame(gameLoop);}
-function stopAndExitToMenu(){ running=false; paused=false; if(animationId) cancelAnimationFrame(animationId); showPage('menu'); }
-function togglePause(){ if(!running) return; paused=!paused; if(paused){ if(animationId) cancelAnimationFrame(animationId); pauseOverlay.style.display='flex'; pauseBtn.textContent='Resume';} else { pauseOverlay.style.display='none'; pauseBtn.textContent='Pause'; animationId=requestAnimationFrame(gameLoop);} }
-function endGame(){ running=false; if(animationId) cancelAnimationFrame(animationId); if(score>bestScore){bestScore=score; localStorage.setItem('flappy-best',score);} setTimeout(()=>{ alert(`Game Over!\nScore: ${score}\nBest: ${bestScore}\nCoins: ${coins}`); showPage('menu'); },80);}
 
-// --- Game loop ---
+function spawnPipe(){
+  let gap = 140, speed=3;
+  if(difficulty==='easy'){ gap=180; speed=2.5; }
+  if(difficulty==='medium'){ gap=130; speed=3.2; }
+  if(difficulty==='hard'){ gap=110; speed=4; }
+  const top=50+Math.random()*(height-gap-150);
+  pipes.push({x:width, top, gap, passed:false, speed, coin: Math.random()<0.4 });
+}
+
+function startGame(){
+  if(animationId) cancelAnimationFrame(animationId);
+  resetGame(); running=true;
+  animationId=requestAnimationFrame(gameLoop);
+}
+
+function stopAndExitToMenu(){ running=false; paused=false; if(animationId) cancelAnimationFrame(animationId); showPage('menu'); }
+
+function togglePause(){
+  if(!running) return;
+  paused=!paused;
+  if(paused){ if(animationId) cancelAnimationFrame(animationId); pauseOverlay.style.display='flex'; pauseBtn.textContent='Resume'; }
+  else { pauseOverlay.style.display='none'; pauseBtn.textContent='Pause'; animationId=requestAnimationFrame(gameLoop); }
+}
+
+function endGame(){
+  running=false;
+  if(animationId) cancelAnimationFrame(animationId);
+  if(score>bestScore){ bestScore=score; localStorage.setItem('flappy-best',bestScore); }
+  setTimeout(()=>{ alert(`Game Over!\nScore: ${score}\nBest: ${bestScore}`); showPage('menu'); },80);
+}
+
+// Physics
+const GRAVITY=0.5; const MAX_FALL=14;
+
+// Challenges tracker
+let challengeCollectedCoins=0; let challengeScore10=false; let challengeCoins5=false; let challengeSurvive30=false;
+let runStartTime=0;
+
+// Game loop
 function gameLoop(){
-  if(!running||paused) return; frameCount++;
+  if(!running || paused) return;
+  frameCount++;
+
+  // Spawn pipes
   if(frameCount%90===0) spawnPipe();
 
-  // physics
-  bird.vy += GRAVITY; if(bird.vy>MAX_FALL) bird.vy=MAX_FALL; bird.y += bird.vy;
+  // Gravity
+  bird.vy += GRAVITY; if(bird.vy>MAX_FALL) bird.vy=MAX_FALL; bird.y+=bird.vy;
 
-  // move pipes
-  pipes.forEach(p=>{p.x-=3.2; if(!p.passed && p.x+60<bird.x){p.passed=true; score++; document.getElementById('scoreDisplay').textContent=score; beep(660,0.03);}});
-  pipes = pipes.filter(p=>p.x>-80);
+  // Move pipes & coins
+  pipes.forEach(p=>{
+    p.x -= p.speed;
+    if(!p.passed && p.x + 60 < bird.x){ p.passed=true; score++; document.getElementById('scoreDisplay').textContent=score; beep(660,0.03); }
+    if(p.coin && Math.abs(bird.x-(p.x+30))<16 && bird.y > p.top && bird.y < p.top+p.gap){
+      settings.coins++; p.coin=false; localStorage.setItem('flappy-coins', settings.coins); updateUI(); challengeCollectedCoins++;
+      beep(1000,0.05);
+    }
+  });
+  pipes = pipes.filter(p => p.x>-80);
 
-  // move coins
-  coinsOnScreen.forEach(c=>{ c.x-=3.2; if(!c.collected && Math.abs(c.x-bird.x)<bird.r && Math.abs(c.y-bird.y)<bird.r){ c.collected=true; coins++; localStorage.setItem('flappy-coins',coins); updateUI(); beep(1000,0.04); } });
-  coinsOnScreen = coinsOnScreen.filter(c=>!c.collected && c.x>0);
-
-  // collisions / ground / ceiling
-  if(bird.y+bird.r>height-24 || bird.y-bird.r<0) { endGame(); return; }
+  // Ground / ceiling / pipe collisions
+  if(bird.y+bird.r>height-24 || bird.y-bird.r<0){ endGame(); return; }
   for(const p of pipes){ if(bird.x+bird.r>p.x && bird.x-bird.r<p.x+60){ if(bird.y-bird.r<p.top || bird.y+bird.r>p.top+p.gap){ endGame(); return; } } }
+
+  // Challenges
+  const elapsed = (performance.now()-runStartTime)/1000;
+  if(!challengeScore10 && score>=10){ settings.coins+=5; challengeScore10=true; alert("Challenge complete: Score 10 → +5 coins"); }
+  if(!challengeCoins5 && challengeCollectedCoins>=5){ settings.coins+=5; challengeCoins5=true; alert("Challenge complete: Collect 5 coins → +5 coins"); }
+  if(!challengeSurvive30 && elapsed>=30){ settings.coins+=5; challengeSurvive30=true; alert("Challenge complete: Survive 30s → +5 coins"); }
+  localStorage.setItem('flappy-coins', settings.coins);
+  updateUI();
 
   draw();
   animationId=requestAnimationFrame(gameLoop);
 }
 
-// --- Draw ---
+// Draw
 function draw(){
   ctx.clearRect(0,0,width,height);
-  const th=themeOptions.find(t=>t.id===settings.theme);
-  const g=ctx.createLinearGradient(0,0,0,height); g.addColorStop(0,th.top); g.addColorStop(1,th.bottom); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
+
+  // background
+  const th = themeOptions.find(t=>t.id===settings.theme);
+  const g = ctx.createLinearGradient(0,0,0,height); g.addColorStop(0,th.top); g.addColorStop(1,th.bottom); ctx.fillStyle=g; ctx.fillRect(0,0,width,height);
 
   // clouds
-  clouds.forEach(c=>{ c.x+=c.speed; if(c.x>width+100)c.x=-120; ctx.beginPath(); ctx.ellipse(c.x,c.y,50,30,0,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.fill(); });
-
-  // pipes
-  ctx.fillStyle='#2b9a77'; pipes.forEach(p=>{ ctx.fillRect(p.x,0,60,p.top); ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24); });
-
-  // coins
-  coinsOnScreen.forEach(c=>{ ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,Math.PI*2); ctx.fillStyle='gold'; ctx.fill(); ctx.strokeStyle='orange'; ctx.stroke(); });
-
-  // ground
-  ctx.fillStyle='#6fcf97'; ctx.fillRect(0,height-24,width,24);
-
-  // bird
-  const skin = skinOptions.find(s=>s.id===settings.skin) || skinOptions[0];
-  const tilt = Math.max(-0.8, Math.min(0.8, bird.vy/12));
-  ctx.save(); ctx.translate(bird.x,bird.y); ctx.rotate(tilt*0.5);
-  ctx.beginPath(); ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2); ctx.fillStyle=skin.body; ctx.fill();
-  ctx.beginPath(); ctx.arc(-4,-2,3,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
-  ctx.beginPath(); ctx.moveTo(bird.r-2,0); ctx.lineTo(bird.r+12,-5); ctx.lineTo(bird.r+12,6); ctx.closePath(); ctx.fillStyle=skin.beak; ctx.fill();
-  ctx.restore();
-}
-
-// --- Init UI ---
-updateUI();
-</script>
-</body>
-</html>
+  clouds.forEach(c=>

@@ -14,18 +14,16 @@ button{padding:12px 24px;margin:8px;font-weight:700;border:none;border-radius:12
 button:hover{transform:scale(1.05);}
 .menu-title{font-size:2rem;margin-bottom:16px;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);}
 .card{background:var(--ui);padding:16px;border-radius:12px;display:flex;flex-direction:column;align-items:center;}
-#skins .skin, .store-skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;position:relative;}
-#skins .skin.selected, .store-skin.selected{outline:3px solid #fff;}
-#skins .locked::after, .store-skin.locked::after{content:'🔒';position:absolute;top:0;right:0;font-size:20px;}
+#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;}
+#skins .skin.selected{outline:3px solid #fff;}
 #themes .theme{width:80px;height:48px;border-radius:8px;margin:6px;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:700;color:#111;}
 #themes .theme.selected{outline:3px solid #fff;}
 #gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;}
 #backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:2;}
 #scoreDisplay,#coinDisplay{position:absolute;top:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:2;}
 #scoreDisplay{left:12px;}
-#coinDisplay{left:140px;}
-.store-container{display:flex;flex-wrap:wrap;justify-content:center;}
-.leaderboard{margin-top:12px;text-align:left;width:220px;}
+#coinDisplay{left:120px;}
+#leaderList{margin-top:12px;width:100%;text-align:center;}
 </style>
 </head>
 <body>
@@ -37,8 +35,8 @@ button:hover{transform:scale(1.05);}
     <button id="playBtn">Play</button>
     <button id="skinsBtn">Bird Skins</button>
     <button id="storeBtn">Store</button>
-    <button id="settingsBtn">Settings</button>
     <button id="leaderBtn">Leaderboard</button>
+    <button id="settingsBtn">Settings</button>
   </div>
 </div>
 
@@ -52,10 +50,8 @@ button:hover{transform:scale(1.05);}
 <!-- STORE -->
 <div id="storePage" class="page">
   <div class="menu-title">Coin Store</div>
-  <div class="card store-container" id="storeSkins">
-    <p>Coins: <span id="coinCount">0</span></p>
-    <p>Challenges Completed: <span id="challengesDone">0</span></p>
-  </div>
+  <div class="card" id="storeItems"></div>
+  <p>Coins: <span id="coinCount">0</span></p>
   <button id="storeBack">Back</button>
 </div>
 
@@ -72,7 +68,7 @@ button:hover{transform:scale(1.05);}
 <!-- LEADERBOARD -->
 <div id="leaderPage" class="page">
   <div class="menu-title">Leaderboard</div>
-  <div class="card leaderboard" id="leaderList"></div>
+  <div class="card" id="leaderList"></div>
   <button id="leaderBack">Back</button>
 </div>
 
@@ -86,43 +82,58 @@ button:hover{transform:scale(1.05);}
 
 <script>
 // Pages
-const pages={menu:menuPage,skins:skinsPage,store:storePage,settings:settingsPage,leader:leaderPage,game:gamePage};
+const pages={menu:menuPage,skins:skinsPage,settings:settingsPage,game:gamePage,store:storePage,leader:leaderPage};
 function showPage(name){Object.values(pages).forEach(p=>p.classList.remove('active'));pages[name].classList.add('active');}
 
+// Buttons
+const playBtn = document.getElementById('playBtn');
+const skinsBtn = document.getElementById('skinsBtn');
+const storeBtn = document.getElementById('storeBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const leaderBtn = document.getElementById('leaderBtn');
+const skinsBack = document.getElementById('skinsBack');
+const storeBack = document.getElementById('storeBack');
+const settingsBack = document.getElementById('settingsBack');
+const leaderBack = document.getElementById('leaderBack');
+const backBtn = document.getElementById('backBtn');
+
 // Skins & Themes
+let coins = Number(localStorage.getItem('flappy-coins')||0);
+const coinCount = document.getElementById('coinCount');
+coinCount.textContent = coins;
+
 const skinOptions=[
   {id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
   {id:'red',body:'#ff7b9c',beak:'#ffd166'},
   {id:'blue',body:'#5eead4',beak:'#ffd166'},
   {id:'gold',body:'#ffda6a',beak:'#ffaa00',locked:true,price:50},
-  {id:'galaxy',body:'linear-gradient(45deg,#6e0dd0,#00f5ff)',locked:true,price:100},
-  {id:'diamond',body:'#b9f2ff',beak:'#0af',locked:true,price:200}
+  {id:'galaxy',body:'linear-gradient(to right,#a29bfe,#6c5ce7)',beak:'#fff',locked:true,price:100},
+  {id:'diamond',body:'#00f2fe',beak:'#fff',locked:true,price:200}
 ];
+
+const skinsContainer=document.getElementById('skins');
+skinOptions.forEach(s=>{
+  const b=document.createElement('div');
+  b.className='skin';
+  b.dataset.id=s.id;
+  b.style.background=s.body;
+  if(s.locked && !localStorage.getItem('unlocked-'+s.id)) b.style.filter='grayscale(1)';
+  b.addEventListener('click',()=>{
+    if(s.locked && !localStorage.getItem('unlocked-'+s.id)){
+      alert('Locked! Buy in store.');
+      return;
+    }
+    settings.skin=s.id;updateUI();localStorage.setItem('flappy-skin',s.id);
+  });
+  skinsContainer.appendChild(b);
+});
+
 const themeOptions=[
   {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
   {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
   {id:'night',top:'#0f172a',bottom:'#071230'}
 ];
-let settings={skin:localStorage.getItem('flappy-skin')||'yellow',theme:localStorage.getItem('flappy-theme')||'day'};
-let coins=Number(localStorage.getItem('flappy-coins')||0);
-let challengesDone=Number(localStorage.getItem('flappy-challenges')||0);
-const coinCount=document.getElementById('coinCount');
-const challengesLabel=document.getElementById('challengesDone');
-coinCount.textContent=coins;
-challengesLabel.textContent=challengesDone;
 
-// Skins UI
-const skinsContainer=document.getElementById('skins');
-skinOptions.forEach(s=>{
-  const b=document.createElement('div');b.className='skin';b.dataset.id=s.id;
-  b.style.background=s.body||'#fff';
-  if(s.locked&&!localStorage.getItem('unlocked-'+s.id)) b.classList.add('locked');
-  b.addEventListener('click',()=>{
-    if(s.locked && !localStorage.getItem('unlocked-'+s.id)){alert('Locked! Buy in store.');return;}
-    settings.skin=s.id;updateUI();localStorage.setItem('flappy-skin',s.id);
-  });
-  skinsContainer.appendChild(b);
-});
 const themesContainer=document.getElementById('themes');
 themeOptions.forEach(t=>{
   const b=document.createElement('div');b.className='theme';b.dataset.id=t.id;
@@ -131,31 +142,132 @@ themeOptions.forEach(t=>{
   b.addEventListener('click',()=>{settings.theme=t.id;updateUI();localStorage.setItem('flappy-theme',t.id);});
   themesContainer.appendChild(b);
 });
+
+let settings={skin:localStorage.getItem('flappy-skin')||'yellow',theme:localStorage.getItem('flappy-theme')||'day'};
 function updateUI(){
   Array.from(skinsContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.skin));
   Array.from(themesContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));
 }
 updateUI();
 
-// Store UI
-const storeSkins=document.getElementById('storeSkins');
-skinOptions.forEach(s=>{
-  if(!s.locked) return;
-  const b=document.createElement('div');b.className='store-skin';b.dataset.id=s.id;b.title=s.id+' ('+s.price+' coins)';
-  b.style.background=s.body||'#fff';
-  if(!localStorage.getItem('unlocked-'+s.id)) b.classList.add('locked');
-  b.addEventListener('click',()=>{buySkin(s.id,s.price);updateStore();});
-  storeSkins.appendChild(b);
-});
+// Store
+const storeItems=document.getElementById('storeItems');
 function updateStore(){
-  storeSkins.querySelectorAll('.store-skin').forEach(s=>{
-    const id=s.dataset.id;
-    s.classList.toggle('locked',!localStorage.getItem('unlocked-'+id));
+  storeItems.innerHTML='';
+  skinOptions.filter(s=>s.locked).forEach(s=>{
+    const b=document.createElement('button');
+    b.textContent=`Buy ${s.id} Skin (${s.price} coins)`;
+    b.onclick=()=>buySkin(s.id,s.price);
+    storeItems.appendChild(b);
+  });
+}
+function buySkin(id,price){
+  if(coins>=price){
+    coins-=price;
+    localStorage.setItem('unlocked-'+id,true);
+    localStorage.setItem('flappy-coins',coins);
+    coinCount.textContent=coins;
+    alert(id+' skin unlocked!');
+    updateStore();
+    updateUI();
+  }else alert('Not enough coins!');
+}
+updateStore();
+
+// Leaderboard
+function renderLeaderboard(){
+  const fakePlayers = [
+    {name:'Player1',score:120},
+    {name:'BirdMaster',score:95},
+    {name:'SkyFlap',score:75},
+    {name:'FlappyPro',score:60},
+    {name:'NoobBird',score:20},
+  ];
+  const leaderList = document.getElementById('leaderList');
+  leaderList.innerHTML='';
+  fakePlayers.forEach(p=>{
+    const div=document.createElement('div');
+    div.textContent=`${p.name}: ${p.score}`;
+    leaderList.appendChild(div);
   });
 }
 
-// Navigation
+// Nav buttons
 playBtn.onclick=()=>{showPage('game');startGame();};
 skinsBtn.onclick=()=>{showPage('skins');updateUI();};
+storeBtn.onclick=()=>{showPage('store');updateStore();};
 settingsBtn.onclick=()=>showPage('settings');
-storeBtn.onclick=()=>
+leaderBtn.onclick=()=>{showPage('leader');renderLeaderboard();};
+skinsBack.onclick=settingsBack.onclick=storeBack.onclick=leaderBack.onclick=()=>{showPage('menu');};
+backBtn.onclick=()=>{showPage('menu');running=false;};
+
+// --- Game ---
+const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');
+let width=canvas.width,height=canvas.height;
+let bird,pipes,frameCount,running=false,score=0;
+
+function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16};pipes=[];frameCount=0;score=0;document.getElementById('scoreDisplay').textContent='Score: 0';}
+function spawnPipe(){const gap=130;const top=60+Math.random()*(height-gap-120);pipes.push({x:width,top,gap,passed:false});}
+
+// Classic Flappy Bird physics
+function flap(){bird.vy=-8.5;}
+window.addEventListener('keydown',e=>{if(e.code==='Space')flap();});
+canvas.addEventListener('mousedown',flap);
+
+function startGame(){resetGame();running=true;requestAnimationFrame(gameLoop);}
+function gameLoop(){if(!running)return;frameCount++;if(frameCount%90===0)spawnPipe();update();draw();requestAnimationFrame(gameLoop);}
+function update(){
+  const gravity=0.5;bird.vy+=gravity;bird.y+=bird.vy;
+  pipes.forEach(p=>{p.x-=2.5;
+    if(!p.passed&&p.x+60<bird.x){p.passed=true;score++;coins+=2;
+      document.getElementById('scoreDisplay').textContent='Score: '+score;
+      document.getElementById('coinDisplay').textContent='💰 '+coins;
+      localStorage.setItem('flappy-coins',coins);
+      checkChallenges();
+    }
+  });
+  pipes=pipes.filter(p=>p.x>-60);
+  if(bird.y+bird.r>height-24)gameOver();
+  for(const p of pipes){
+    if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+60){
+      if(bird.y-bird.r<p.top||bird.y+bird.r>p.top+p.gap)gameOver();
+    }
+  }
+}
+function draw(){
+  const th=themeOptions.find(t=>t.id===settings.theme);
+  const g=ctx.createLinearGradient(0,0,0,height);
+  g.addColorStop(0,th.top);g.addColorStop(1,th.bottom);
+  ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+
+  // Pipes with gradient
+  pipes.forEach(p=>{
+    const grd=ctx.createLinearGradient(p.x,0,p.x+60,0);
+    grd.addColorStop(0,'#1e7c56');grd.addColorStop(1,'#3fc980');
+    ctx.fillStyle=grd;
+    ctx.fillRect(p.x,0,60,p.top);
+    ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);
+  });
+
+  ctx.fillStyle='#6fcf97';ctx.fillRect(0,height-24,width,24);
+
+  // Bird
+  const skin=skinOptions.find(s=>s.id===settings.skin);
+  ctx.save();ctx.translate(bird.x,bird.y);
+  ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);ctx.fillStyle=skin.body;ctx.fill();
+  ctx.beginPath();ctx.arc(-4,-2,3,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();
+  ctx.beginPath();ctx.moveTo(bird.r-2,0);ctx.lineTo(bird.r+12,-5);ctx.lineTo(bird.r+12,6);ctx.closePath();ctx.fillStyle=skin.beak;ctx.fill();
+  ctx.restore();
+}
+function gameOver(){running=false;alert('Game Over! Score: '+score);showPage('menu');}
+
+// Challenges
+function checkChallenges(){
+  if(score===10&&!localStorage.getItem('challenge10')){localStorage.setItem('challenge10',true);coins+=20;alert('Challenge complete: Pass 10 pipes! +20 coins');}
+  if(score===25&&!localStorage.getItem('challenge25')){localStorage.setItem('challenge25',true);coins+=40;alert('Challenge complete: Pass 25 pipes! +40 coins');}
+  coinCount.textContent=coins;
+  localStorage.setItem('flappy-coins',coins);
+}
+</script>
+</body>
+</html>

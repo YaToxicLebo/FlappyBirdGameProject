@@ -22,7 +22,7 @@ button:hover{transform:scale(1.05);}
 #backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:2;}
 #scoreDisplay,#coinDisplay{position:absolute;top:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:2;}
 #scoreDisplay{left:12px;}
-#coinDisplay{left:120px;}
+#coinDisplay{left:150px;}
 </style>
 </head>
 <body>
@@ -34,6 +34,7 @@ button:hover{transform:scale(1.05);}
     <button id="playBtn">Play</button>
     <button id="skinsBtn">Bird Skins</button>
     <button id="storeBtn">Store</button>
+    <button id="leaderboardBtn">Leaderboard</button>
     <button id="settingsBtn">Settings</button>
   </div>
 </div>
@@ -51,9 +52,18 @@ button:hover{transform:scale(1.05);}
   <div class="card">
     <p>Coins: <span id="coinCount">0</span></p>
     <p>Challenges Completed: <span id="challengesDone">0</span></p>
-    <button id="buySkinBtn">Buy Gold Skin (50 coins)</button>
+    <button id="buyGold">Buy Gold Skin (50 coins)</button>
+    <button id="buyGalaxy">Buy Galaxy Skin (150 coins)</button>
+    <button id="buyDiamond">Buy Diamond Skin (300 coins)</button>
   </div>
   <button id="storeBack">Back</button>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="leaderboardPage" class="page">
+  <div class="menu-title">Leaderboard</div>
+  <div class="card" id="leaderboardList"></div>
+  <button id="leaderboardBack">Back</button>
 </div>
 
 <!-- SETTINGS -->
@@ -75,28 +85,27 @@ button:hover{transform:scale(1.05);}
 </div>
 
 <script>
-const pages={menu:menuPage,skins:skinsPage,settings:settingsPage,game:gamePage,store:storePage};
+// --- Pages ---
+const pages={menu:menuPage,skins:skinsPage,settings:settingsPage,game:gamePage,store:storePage,leaderboard:leaderboardPage};
 function showPage(name){Object.values(pages).forEach(p=>p.classList.remove('active'));pages[name].classList.add('active');}
 
-// --- Skins & Themes ---
+// --- Skins ---
 const skinOptions=[
-  {id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
-  {id:'red',body:'#ff7b9c',beak:'#ffd166'},
-  {id:'blue',body:'#5eead4',beak:'#ffd166'},
-  {id:'black',body:'#6b7280',beak:'#d1d5db'},
-  {id:'gold',body:'#ffda6a',beak:'#ffaa00',locked:true}
-];
-const themeOptions=[
-  {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
-  {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
-  {id:'night',top:'#0f172a',bottom:'#071230'}
+{id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
+{id:'red',body:'#ff7b9c',beak:'#ffd166'},
+{id:'blue',body:'#5eead4',beak:'#ffd166'},
+{id:'black',body:'#6b7280',beak:'#d1d5db'},
+{id:'gold',body:'#ffda6a',beak:'#ffaa00',locked:true},
+{id:'galaxy',body:'linear-gradient(to right,#6a11cb,#2575fc)',beak:'#fff',locked:true},
+{id:'diamond',body:'#b9f2ff',beak:'#00f',locked:true}
 ];
 let settings={skin:localStorage.getItem('flappy-skin')||'yellow',theme:localStorage.getItem('flappy-theme')||'day'};
 let coins=Number(localStorage.getItem('flappy-coins')||0);
 let challengesDone=Number(localStorage.getItem('flappy-challenges')||0);
 const coinCount=document.getElementById('coinCount');
 const challengesLabel=document.getElementById('challengesDone');
-coinCount.textContent=coins;challengesLabel.textContent=challengesDone;
+coinCount.textContent=coins;
+challengesLabel.textContent=challengesDone;
 
 const skinsContainer=document.getElementById('skins');
 skinOptions.forEach(s=>{
@@ -111,6 +120,9 @@ skinOptions.forEach(s=>{
   });
   skinsContainer.appendChild(b);
 });
+
+// --- Themes ---
+const themeOptions=[{id:'day',top:'#9be7ff',bottom:'#bfeaff'},{id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},{id:'night',top:'#0f172a',bottom:'#071230'}];
 const themesContainer=document.getElementById('themes');
 themeOptions.forEach(t=>{
   const b=document.createElement('div');b.className='theme';b.dataset.id=t.id;
@@ -125,19 +137,37 @@ function updateUI(){
 }
 updateUI();
 
-// --- Nav ---
+// --- Navigation ---
 playBtn.onclick=()=>{showPage('game');startGame();};
 skinsBtn.onclick=()=>{showPage('skins');updateUI();};
 settingsBtn.onclick=()=>showPage('settings');
 storeBtn.onclick=()=>showPage('store');
-skinsBack.onclick=settingsBack.onclick=storeBack.onclick=()=>showPage('menu');
+leaderboardBtn.onclick=()=>{showLeaderboard();showPage('leaderboard');};
+skinsBack.onclick=settingsBack.onclick=storeBack.onclick=leaderboardBack.onclick=()=>showPage('menu');
 backBtn.onclick=()=>{showPage('menu');running=false;};
 
-// --- Buy skin ---
-buySkinBtn.onclick=()=>{
-  if(coins>=50){coins-=50;localStorage.setItem('unlocked-gold',true);localStorage.setItem('flappy-coins',coins);alert('Gold skin unlocked!');coinCount.textContent=coins;}
+// --- Buy skins ---
+buyGold.onclick=()=>{buySkin('gold',50);}
+buyGalaxy.onclick=()=>{buySkin('galaxy',150);}
+buyDiamond.onclick=()=>{buySkin('diamond',300);}
+function buySkin(id,cost){
+  if(coins>=cost){coins-=cost;localStorage.setItem('unlocked-'+id,true);localStorage.setItem('flappy-coins',coins);coinCount.textContent=coins;alert(id+' skin unlocked!');updateUI();}
   else alert('Not enough coins!');
-};
+}
+
+// --- Leaderboard ---
+const leaderboardList=document.getElementById('leaderboardList');
+const fakeScores=[{name:'Alice',score:75},{name:'Bob',score:60},{name:'Charlie',score:50},{name:'Dave',score:40},{name:'Eve',score:30}];
+function showLeaderboard(){
+  leaderboardList.innerHTML='';
+  const best=Number(localStorage.getItem('flappy-best')||0);
+  const all=[...fakeScores,{name:'You',score:best}].sort((a,b)=>b.score-a.score);
+  all.forEach(p=>{
+    const div=document.createElement('div');
+    div.textContent=p.name+': '+p.score;
+    leaderboardList.appendChild(div);
+  });
+}
 
 // --- Game ---
 const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');
@@ -146,15 +176,18 @@ let bird,pipes,frameCount,running=false,score=0;
 
 function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16};pipes=[];frameCount=0;score=0;document.getElementById('scoreDisplay').textContent='Score: 0';}
 function spawnPipe(){const gap=130;const top=60+Math.random()*(height-gap-120);pipes.push({x:width,top,gap,passed:false});}
-function flap(){bird.vy=-8.5;}
+
+// --- Flap & Physics ---
+function flap(){bird.vy=-8;}
 window.addEventListener('keydown',e=>{if(e.code==='Space')flap();});
 canvas.addEventListener('mousedown',flap);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();flap();},{passive:false});
 
 function startGame(){resetGame();running=true;requestAnimationFrame(gameLoop);}
 function gameLoop(){if(!running)return;frameCount++;if(frameCount%90===0)spawnPipe();update();draw();requestAnimationFrame(gameLoop);}
 function update(){
-  const gravity=0.5;bird.vy+=gravity;bird.y+=bird.vy;
-  pipes.forEach(p=>{p.x-=2.4;
+  const gravity=0.45;bird.vy+=gravity;if(bird.vy>10)bird.vy=10;bird.y+=bird.vy;
+  pipes.forEach(p=>{p.x-=2.5;
     if(!p.passed&&p.x+60<bird.x){p.passed=true;score++;coins+=2;
       document.getElementById('scoreDisplay').textContent='Score: '+score;
       document.getElementById('coinDisplay').textContent='💰 '+coins;
@@ -163,7 +196,7 @@ function update(){
     }
   });
   pipes=pipes.filter(p=>p.x>-60);
-  if(bird.y+bird.r>height-24)gameOver();
+  if(bird.y+bird.r>height-24||bird.y-bird.r<0)gameOver();
   for(const p of pipes){
     if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+60){
       if(bird.y-bird.r<p.top||bird.y+bird.r>p.top+p.gap)gameOver();
@@ -172,40 +205,35 @@ function update(){
 }
 function draw(){
   const th=themeOptions.find(t=>t.id===settings.theme);
-  const g=ctx.createLinearGradient(0,0,0,height);
-  g.addColorStop(0,th.top);g.addColorStop(1,th.bottom);
-  ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+  const g=ctx.createLinearGradient(0,0,0,height);g.addColorStop(0,th.top);g.addColorStop(1,th.bottom);ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+  // pipes
   pipes.forEach(p=>{
-    const grd=ctx.createLinearGradient(p.x,0,p.x+60,0);
-    grd.addColorStop(0,'#1e7c56');
-    grd.addColorStop(1,'#3fc980');
-    ctx.fillStyle=grd;
-    ctx.fillRect(p.x,0,60,p.top);
-    ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);
+    const grd=ctx.createLinearGradient(p.x,0,p.x+60,0);grd.addColorStop(0,'#1e7c56');grd.addColorStop(1,'#3fc980');ctx.fillStyle=grd;
+    // top pipe
+    ctx.fillRect(p.x,0,60,p.top);ctx.beginPath();ctx.moveTo(p.x,p.top);ctx.arc(p.x+30,p.top,30,Math.PI,0);ctx.fill();
+    // bottom pipe
+    ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);ctx.beginPath();ctx.moveTo(p.x,p.top+p.gap);ctx.arc(p.x+30,p.top+p.gap,30,0,Math.PI);ctx.fill();
   });
   ctx.fillStyle='#6fcf97';ctx.fillRect(0,height-24,width,24);
+  // bird
   const skin=skinOptions.find(s=>s.id===settings.skin);
-  ctx.save();ctx.translate(bird.x,bird.y);
-  ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);
-  ctx.fillStyle=skin.body;ctx.fill();
+  const tilt=Math.max(-0.5,Math.min(0.5,bird.vy/8));
+  ctx.save();ctx.translate(bird.x,bird.y);ctx.rotate(tilt);
+  ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);ctx.fillStyle=skin.body;ctx.fill();
+  // eye
   ctx.beginPath();ctx.arc(-4,-2,3,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();
-  ctx.beginPath();ctx.moveTo(bird.r-2,0);ctx.lineTo(bird.r+12,-5);ctx.lineTo(bird.r+12,6);
-  ctx.closePath();ctx.fillStyle=skin.beak;ctx.fill();
+  // beak
+  ctx.beginPath();ctx.moveTo(bird.r-2,0);ctx.lineTo(bird.r+12,-5);ctx.lineTo(bird.r+12,6);ctx.closePath();ctx.fillStyle=skin.beak;ctx.fill();
   ctx.restore();
 }
-function gameOver(){
-  running=false;
-  alert('Game Over! Score: '+score);
-  showPage('menu');
-}
+function gameOver(){running=false;const best=Number(localStorage.getItem('flappy-best')||0);if(score>best){localStorage.setItem('flappy-best',score);}alert('Game Over! Score: '+score);showPage('menu');}
+
 // --- Challenges ---
 function checkChallenges(){
-  if(score===10&&!localStorage.getItem('challenge10')){
-    localStorage.setItem('challenge10',true);coins+=20;challengesDone++;alert('Challenge complete: Pass 10 pipes! +20 coins');
-  }
-  if(score===25&&!localStorage.getItem('challenge25')){
-    localStorage.setItem('challenge25',true);coins+=40;challengesDone++;alert('Challenge complete: Pass 25 pipes! +40 coins');
-  }
+  if(score===10&&!localStorage.getItem('challenge10')){localStorage.setItem('challenge10',true);coins+=20;challengesDone++;alert('Challenge complete: Pass 10 pipes! +20 coins');}
+  if(score===25&&!localStorage.getItem('challenge25')){localStorage.setItem('challenge25',true);coins+=40;challengesDone++;alert('Challenge complete: Pass 25 pipes! +40 coins');}
+  if(score===50&&!localStorage.getItem('challenge50')){localStorage.setItem('challenge50',true);coins+=100;challengesDone++;alert('Challenge complete: Pass 50 pipes! +100 coins');}
+  if(score===100&&!localStorage.getItem('challenge100')){localStorage.setItem('challenge100',true);coins+=300;challengesDone++;alert('Challenge complete: Pass 100 pipes! +300 coins');}
   localStorage.setItem('flappy-coins',coins);
   localStorage.setItem('flappy-challenges',challengesDone);
   coinCount.textContent=coins;

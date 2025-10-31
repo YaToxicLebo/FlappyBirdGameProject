@@ -5,137 +5,63 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flappy Deluxe</title>
 <style>
-:root {
-  --accent: #ffd166;
-  --muted: #64748b;
-  --ui: #ffffffcc;
-}
-* {
-  box-sizing: border-box;
-  font-family: 'Segoe UI', sans-serif;
-  margin: 0;
-  padding: 0;
-}
-body, html {
-  height: 100%;
-  background: linear-gradient(#9be7ff, #bfeaff);
-  overflow: hidden;
-}
-.page {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.5s;
-}
-.page.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-button {
-  padding: 12px 24px;
-  margin: 8px;
-  font-weight: 700;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: transform 0.2s;
-  background: var(--accent);
-}
-button:hover {
-  transform: scale(1.05);
-}
-.menu-title {
-  font-size: 2rem;
-  margin-bottom: 16px;
-  color: #fff;
-  text-shadow: 0 3px 6px rgba(0,0,0,0.3);
-}
-.card {
-  background: var(--ui);
-  padding: 16px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-#gameCanvas {
-  background: transparent;
-  display: block;
-  margin: auto;
-  border-radius: 12px;
-  z-index: 1;
-  position: relative;
-}
-#backBtn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--ui);
-  border: none;
-  cursor: pointer;
-  z-index: 2;
-}
-#scoreDisplay {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 2px 4px #000;
-  z-index: 2;
-}
+:root{--accent:#ffd166;--muted:#64748b;--ui:#ffffffcc;}
+*{box-sizing:border-box;font-family:'Segoe UI',sans-serif;margin:0;padding:0;}
+body,html{height:100%;background:linear-gradient(#9be7ff,#bfeaff);overflow:hidden;}
+.page{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+.page.active{opacity:1;pointer-events:auto;}
+button{padding:12px 24px;margin:8px;font-weight:700;border:none;border-radius:12px;cursor:pointer;transition:transform 0.2s;background:var(--accent);}
+button:hover{transform:scale(1.05);}
+.menu-title{font-size:2rem;margin-bottom:16px;color:#fff;text-shadow:0 3px 6px rgba(0,0,0,0.3);}
+.card{background:var(--ui);padding:16px;border-radius:12px;display:flex;flex-direction:column;align-items:center;}
+#skins .skin{width:64px;height:64px;margin:6px;border-radius:10px;cursor:pointer;display:flex;justify-content:center;align-items:center;border:2px solid transparent;}
+#skins .skin.selected{outline:3px solid #fff;}
+#themes .theme{width:80px;height:48px;border-radius:8px;margin:6px;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:700;color:#111;}
+#themes .theme.selected{outline:3px solid #fff;}
+#gameCanvas{background:transparent;display:block;margin:auto;border-radius:12px;z-index:1;position:relative;}
+#backBtn{position:absolute;top:12px;right:12px;padding:8px 12px;border-radius:8px;background:var(--ui);border:none;cursor:pointer;z-index:2;}
+#scoreDisplay,#coinDisplay{position:absolute;top:12px;font-size:20px;font-weight:700;color:#fff;text-shadow:0 2px 4px #000;z-index:2;}
+#scoreDisplay{left:12px;}
+#coinDisplay{left:120px;}
 </style>
 </head>
 <body>
 
-<!-- INTRO -->
-<div id="introPage" class="page active">
-  <div class="menu-title">🎮 Welcome to Flappy Deluxe!</div>
-  <div class="card">
-    <p>Get ready to flap, collect coins, and complete challenges!</p>
-    <button id="startIntroBtn">Continue</button>
-  </div>
-</div>
-
-<!-- MAIN MENU -->
-<div id="menuPage" class="page">
+<!-- MENU -->
+<div id="menuPage" class="page active">
   <div class="menu-title">Flappy Deluxe</div>
   <div class="card">
     <button id="playBtn">Play</button>
+    <button id="skinsBtn">Bird Skins</button>
     <button id="storeBtn">Store</button>
     <button id="settingsBtn">Settings</button>
   </div>
 </div>
 
+<!-- SKINS -->
+<div id="skinsPage" class="page">
+  <div class="menu-title">Choose Bird Skin</div>
+  <div class="card" id="skins"></div>
+  <button id="skinsBack">Back</button>
+</div>
+
 <!-- STORE -->
 <div id="storePage" class="page">
-  <div class="menu-title">🏪 Coin Store</div>
+  <div class="menu-title">Coin Store</div>
   <div class="card">
     <p>Coins: <span id="coinCount">0</span></p>
-    <p>Buy new skins and upgrades here!</p>
-    <button id="buySkinBtn">Buy Fancy Skin (50 coins)</button>
+    <p>Challenges Completed: <span id="challengesDone">0</span></p>
+    <button id="buySkinBtn">Buy Gold Skin (50 coins)</button>
   </div>
   <button id="storeBack">Back</button>
 </div>
 
 <!-- SETTINGS -->
 <div id="settingsPage" class="page">
-  <div class="menu-title">⚙️ Settings</div>
+  <div class="menu-title">Settings</div>
   <div class="card">
-    <p>Difficulty:</p>
-    <select id="difficultySelect">
-      <option value="easy">Easy</option>
-      <option value="normal" selected>Normal</option>
-      <option value="hard">Hard</option>
-    </select>
+    <div style="margin-bottom:8px;">Background Theme</div>
+    <div id="themes"></div>
   </div>
   <button id="settingsBack">Back</button>
 </div>
@@ -144,111 +70,146 @@ button:hover {
 <div id="gamePage" class="page">
   <canvas id="gameCanvas" width="800" height="500"></canvas>
   <button id="backBtn">Main Menu</button>
-  <div id="scoreDisplay">0</div>
+  <div id="scoreDisplay">Score: 0</div>
+  <div id="coinDisplay">💰 0</div>
 </div>
 
 <script>
-// --- Pages ---
-const pages = {
-  intro: document.getElementById('introPage'),
-  menu: document.getElementById('menuPage'),
-  store: document.getElementById('storePage'),
-  settings: document.getElementById('settingsPage'),
-  game: document.getElementById('gamePage')
+const pages={menu:menuPage,skins:skinsPage,settings:settingsPage,game:gamePage,store:storePage};
+function showPage(name){Object.values(pages).forEach(p=>p.classList.remove('active'));pages[name].classList.add('active');}
+
+// --- Skins & Themes ---
+const skinOptions=[
+  {id:'yellow',body:'#ffd166',beak:'#ff6b6b'},
+  {id:'red',body:'#ff7b9c',beak:'#ffd166'},
+  {id:'blue',body:'#5eead4',beak:'#ffd166'},
+  {id:'black',body:'#6b7280',beak:'#d1d5db'},
+  {id:'gold',body:'#ffda6a',beak:'#ffaa00',locked:true}
+];
+const themeOptions=[
+  {id:'day',top:'#9be7ff',bottom:'#bfeaff'},
+  {id:'sunset',top:'#ffb88c',bottom:'#ffecd2'},
+  {id:'night',top:'#0f172a',bottom:'#071230'}
+];
+let settings={skin:localStorage.getItem('flappy-skin')||'yellow',theme:localStorage.getItem('flappy-theme')||'day'};
+let coins=Number(localStorage.getItem('flappy-coins')||0);
+let challengesDone=Number(localStorage.getItem('flappy-challenges')||0);
+const coinCount=document.getElementById('coinCount');
+const challengesLabel=document.getElementById('challengesDone');
+coinCount.textContent=coins;challengesLabel.textContent=challengesDone;
+
+const skinsContainer=document.getElementById('skins');
+skinOptions.forEach(s=>{
+  const b=document.createElement('div');
+  b.className='skin';
+  b.dataset.id=s.id;
+  b.style.background=s.body;
+  if(s.locked && !localStorage.getItem('unlocked-'+s.id)){b.style.filter='grayscale(1)';}
+  b.addEventListener('click',()=>{
+    if(s.locked&&!localStorage.getItem('unlocked-'+s.id)){alert('Locked! Buy in store.');return;}
+    settings.skin=s.id;updateUI();localStorage.setItem('flappy-skin',s.id);
+  });
+  skinsContainer.appendChild(b);
+});
+const themesContainer=document.getElementById('themes');
+themeOptions.forEach(t=>{
+  const b=document.createElement('div');b.className='theme';b.dataset.id=t.id;
+  b.style.background=`linear-gradient(180deg,${t.top},${t.bottom})`;
+  b.textContent=t.id;
+  b.addEventListener('click',()=>{settings.theme=t.id;updateUI();localStorage.setItem('flappy-theme',t.id);});
+  themesContainer.appendChild(b);
+});
+function updateUI(){
+  Array.from(skinsContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.skin));
+  Array.from(themesContainer.children).forEach(c=>c.classList.toggle('selected',c.dataset.id===settings.theme));
+}
+updateUI();
+
+// --- Nav ---
+playBtn.onclick=()=>{showPage('game');startGame();};
+skinsBtn.onclick=()=>{showPage('skins');updateUI();};
+settingsBtn.onclick=()=>showPage('settings');
+storeBtn.onclick=()=>showPage('store');
+skinsBack.onclick=settingsBack.onclick=storeBack.onclick=()=>showPage('menu');
+backBtn.onclick=()=>{showPage('menu');running=false;};
+
+// --- Buy skin ---
+buySkinBtn.onclick=()=>{
+  if(coins>=50){coins-=50;localStorage.setItem('unlocked-gold',true);localStorage.setItem('flappy-coins',coins);alert('Gold skin unlocked!');coinCount.textContent=coins;}
+  else alert('Not enough coins!');
 };
-function showPage(name) {
-  Object.values(pages).forEach(p => p.classList.remove('active'));
-  pages[name].classList.add('active');
-}
 
-// --- Navigation ---
-document.getElementById('startIntroBtn').addEventListener('click', () => showPage('menu'));
-document.getElementById('playBtn').addEventListener('click', () => { showPage('game'); startGame(); });
-document.getElementById('storeBtn').addEventListener('click', () => showPage('store'));
-document.getElementById('settingsBtn').addEventListener('click', () => showPage('settings'));
-document.getElementById('settingsBack').addEventListener('click', () => showPage('menu'));
-document.getElementById('storeBack').addEventListener('click', () => showPage('menu'));
-document.getElementById('backBtn').addEventListener('click', () => { showPage('menu'); running=false; });
+// --- Game ---
+const canvas=document.getElementById('gameCanvas');const ctx=canvas.getContext('2d');
+let width=canvas.width,height=canvas.height;
+let bird,pipes,frameCount,running=false,score=0;
 
-// --- Game Variables ---
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-let width = canvas.width, height = canvas.height;
-let bird, pipes, frameCount, running = false, score = 0, coins = 0;
-let gravity = 0.45; // stronger physics
-let difficulty = 'normal';
+function resetGame(){bird={x:width/4,y:height/2,vy:0,r:16};pipes=[];frameCount=0;score=0;document.getElementById('scoreDisplay').textContent='Score: 0';}
+function spawnPipe(){const gap=130;const top=60+Math.random()*(height-gap-120);pipes.push({x:width,top,gap,passed:false});}
+function flap(){bird.vy=-8.5;}
+window.addEventListener('keydown',e=>{if(e.code==='Space')flap();});
+canvas.addEventListener('mousedown',flap);
 
-// --- Game Functions ---
-function resetGame() {
-  bird = { x: width / 4, y: height / 2, vy: 0, r: 16 };
-  pipes = [];
-  frameCount = 0;
-  score = 0;
-  document.getElementById('scoreDisplay').textContent = score;
-}
-function spawnPipe() {
-  const gap = 130;
-  const top = 60 + Math.random() * (height - gap - 120);
-  pipes.push({ x: width, top, gap, passed: false });
-}
-function flap() { bird.vy = -8; }
-window.addEventListener('keydown', e => { if (e.code === 'Space') flap(); });
-canvas.addEventListener('mousedown', flap);
-
-function startGame() {
-  resetGame();
-  running = true;
-  requestAnimationFrame(gameLoop);
-}
-function gameLoop() {
-  if (!running) return;
-  frameCount++;
-  if (frameCount % 100 === 0) spawnPipe();
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
-function update() {
-  bird.vy += gravity;
-  bird.y += bird.vy;
-  pipes.forEach(p => {
-    p.x -= 2;
-    if (!p.passed && p.x + 60 < bird.x) {
-      p.passed = true;
-      score++;
-      coins++;
-      document.getElementById('scoreDisplay').textContent = score;
-      document.getElementById('coinCount').textContent = coins;
+function startGame(){resetGame();running=true;requestAnimationFrame(gameLoop);}
+function gameLoop(){if(!running)return;frameCount++;if(frameCount%90===0)spawnPipe();update();draw();requestAnimationFrame(gameLoop);}
+function update(){
+  const gravity=0.5;bird.vy+=gravity;bird.y+=bird.vy;
+  pipes.forEach(p=>{p.x-=2.4;
+    if(!p.passed&&p.x+60<bird.x){p.passed=true;score++;coins+=2;
+      document.getElementById('scoreDisplay').textContent='Score: '+score;
+      document.getElementById('coinDisplay').textContent='💰 '+coins;
+      localStorage.setItem('flappy-coins',coins);
+      checkChallenges();
     }
   });
-  pipes = pipes.filter(p => p.x > -60);
-  if (bird.y + bird.r > height - 24) gameOver();
-  for (const p of pipes) {
-    if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + 60) {
-      if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap) gameOver();
+  pipes=pipes.filter(p=>p.x>-60);
+  if(bird.y+bird.r>height-24)gameOver();
+  for(const p of pipes){
+    if(bird.x+bird.r>p.x&&bird.x-bird.r<p.x+60){
+      if(bird.y-bird.r<p.top||bird.y+bird.r>p.top+p.gap)gameOver();
     }
   }
 }
-function draw() {
-  ctx.clearRect(0,0,width,height);
-  ctx.fillStyle = "#9be7ff";
-  ctx.fillRect(0,0,width,height);
-  ctx.fillStyle = "#2b9a77";
-  pipes.forEach(p => {
+function draw(){
+  const th=themeOptions.find(t=>t.id===settings.theme);
+  const g=ctx.createLinearGradient(0,0,0,height);
+  g.addColorStop(0,th.top);g.addColorStop(1,th.bottom);
+  ctx.fillStyle=g;ctx.fillRect(0,0,width,height);
+  pipes.forEach(p=>{
+    const grd=ctx.createLinearGradient(p.x,0,p.x+60,0);
+    grd.addColorStop(0,'#1e7c56');
+    grd.addColorStop(1,'#3fc980');
+    ctx.fillStyle=grd;
     ctx.fillRect(p.x,0,60,p.top);
     ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);
   });
-  ctx.fillStyle = "#6fcf97";
-  ctx.fillRect(0,height-24,width,24);
-  ctx.beginPath();
-  ctx.arc(bird.x,bird.y,bird.r,0,Math.PI*2);
-  ctx.fillStyle = "#ffd166";
-  ctx.fill();
+  ctx.fillStyle='#6fcf97';ctx.fillRect(0,height-24,width,24);
+  const skin=skinOptions.find(s=>s.id===settings.skin);
+  ctx.save();ctx.translate(bird.x,bird.y);
+  ctx.beginPath();ctx.ellipse(0,0,bird.r,bird.r*0.85,0,0,Math.PI*2);
+  ctx.fillStyle=skin.body;ctx.fill();
+  ctx.beginPath();ctx.arc(-4,-2,3,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();
+  ctx.beginPath();ctx.moveTo(bird.r-2,0);ctx.lineTo(bird.r+12,-5);ctx.lineTo(bird.r+12,6);
+  ctx.closePath();ctx.fillStyle=skin.beak;ctx.fill();
+  ctx.restore();
 }
-function gameOver() {
-  running = false;
-  alert(`Game Over! Score: ${score}`);
+function gameOver(){
+  running=false;
+  alert('Game Over! Score: '+score);
   showPage('menu');
+}
+// --- Challenges ---
+function checkChallenges(){
+  if(score===10&&!localStorage.getItem('challenge10')){
+    localStorage.setItem('challenge10',true);coins+=20;challengesDone++;alert('Challenge complete: Pass 10 pipes! +20 coins');
+  }
+  if(score===25&&!localStorage.getItem('challenge25')){
+    localStorage.setItem('challenge25',true);coins+=40;challengesDone++;alert('Challenge complete: Pass 25 pipes! +40 coins');
+  }
+  localStorage.setItem('flappy-coins',coins);
+  localStorage.setItem('flappy-challenges',challengesDone);
+  coinCount.textContent=coins;
+  challengesLabel.textContent=challengesDone;
 }
 </script>
 </body>

@@ -1,755 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Flappy Deluxe — Premium</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flappy Deluxe</title>
 <style>
-/* ---------- Base ---------- */
-:root{
-  --bg-top:#8ed1ff; --bg-bottom:#bfeaff;
-  --card: rgba(255,255,255,0.85);
-  --accent: #ffd166; --gold: #ffcf33; --muted:#64748b;
-  --glass-shadow: 0 8px 30px rgba(11,40,80,0.18);
+:root {
+  --accent: #ffd166;
+  --muted: #64748b;
+  --ui: #ffffffcc;
 }
-*{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; padding:0;}
-html,body{height:100%; background: linear-gradient(180deg,var(--bg-top),var(--bg-bottom)); overflow:hidden;}
-
-/* ---------- Layout pages ---------- */
-.page { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; opacity:0; transition:opacity .35s ease, transform .35s ease; transform:scale(.995); }
-.page.active{ opacity:1; pointer-events:auto; transform:scale(1); }
-
-/* ---------- Card / Menu ---------- */
-.card { background:var(--card); padding:18px; border-radius:14px; min-width:320px; max-width:520px; box-shadow:var(--glass-shadow); display:flex; flex-direction:column; align-items:center; gap:10px; }
-.menu-title{ font-size:2rem; color:#06304a; text-shadow:0 2px 6px rgba(0,0,0,0.08); font-weight:800; }
-.primary-btn { padding:12px 20px; border-radius:12px; border:none; background:linear-gradient(180deg,var(--accent),#ffc34a); color:#0b2540; font-weight:800; cursor:pointer; box-shadow: 0 8px 18px rgba(11,40,80,0.12); transition: transform .12s, box-shadow .12s; }
-.primary-btn:hover{ transform:translateY(-4px); box-shadow: 0 18px 28px rgba(11,40,80,0.16); }
-
-/* subtle secondary */
-.secondary-btn { padding:8px 12px; border-radius:10px; border:none; background:rgba(255,255,255,0.9); color:#0b2540; cursor:pointer; font-weight:700; box-shadow:0 6px 12px rgba(11,40,80,0.06); }
-
-/* ---------- Canvas & HUD ---------- */
-#gamePage .card{ display:none; } /* don't show card on game page */
-#gameCanvas{ border-radius:14px; background:transparent; box-shadow:var(--glass-shadow); display:block; margin:auto; }
-.hud { position:absolute; top:14px; left:14px; display:flex; gap:12px; z-index:50; align-items:center; }
-.hud .score { font-weight:900; color:#fff; text-shadow:0 3px 8px rgba(0,0,0,0.5); font-size:20px; }
-.hud .coins { display:flex; gap:8px; align-items:center; padding:6px 12px; background:rgba(255,255,255,0.08); border-radius:999px; backdrop-filter: blur(6px); box-shadow:0 6px 12px rgba(0,0,0,0.15); color:#fff; font-weight:800; }
-
-/* spinning coin icon */
-.coin-icon{ width:22px; height:22px; display:inline-block; background: conic-gradient(#ffd700,#ffb700); border-radius:50%; box-shadow: inset 0 -4px 6px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.14); animation:spin 1.6s linear infinite; }
-@keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
-
-/* ---------- Shop UI (glossy) ---------- */
-.shop-wrap{ display:flex; gap:16px; width:760px; max-width:92vw; }
-.shop-left{ width:340px; background:linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.9)); border-radius:14px; padding:14px; box-shadow:var(--glass-shadow); }
-.shop-right{ flex:1; padding:12px; border-radius:14px; display:flex; flex-direction:column; gap:12px; justify-content:flex-start; align-items:stretch; background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02)); }
-/* tabs */
-.tab-bar{ display:flex; gap:8px; justify-content:center; margin-bottom:8px; }
-.tab{ padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:800; color:#06304a; background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.9)); box-shadow:0 6px 14px rgba(11,40,80,0.06); }
-.tab.active{ background: linear-gradient(90deg,#ffd166,#ffb84a); color:#062a3c; transform:translateY(-3px); }
-
-/* item cards */
-.item-card{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; border-radius:10px; background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,255,255,0.92)); box-shadow:0 10px 30px rgba(11,40,80,0.06); }
-.item-preview{ width:64px; height:48px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:900; color:#062a3c; }
-.item-meta{ flex:1; padding-left:8px; }
-.item-title{ font-weight:900; color:#062a3c; }
-.item-price{ font-weight:900; color:#7a4a09; }
-
-/* buy btn */
-.buy-btn{ padding:8px 14px; border-radius:10px; border:none; cursor:pointer; background:linear-gradient(180deg,#ffd166,#ffb84a); font-weight:900; color:#062a3c; box-shadow:0 8px 20px rgba(255,183,60,0.12); }
-
-.owned-badge{ padding:6px 8px; border-radius:999px; background:linear-gradient(180deg,#e5f8ea,#c8efcf); color:#0b4a28; font-weight:800; }
-
-/* small helpers */
-.row{ display:flex; gap:8px; align-items:center; }
-.right{ margin-left:auto; }
-
-/* ---------- Intro cinematic overlay ---------- */
-.intro-canvas{ position:absolute; inset:0; z-index:80; pointer-events:none; }
-.logo{ position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; color:white; text-shadow:0 12px 30px rgba(0,0,0,0.45); font-weight:900; opacity:0; transition:opacity .8s; z-index:90; }
-.logo.show{ opacity:1; animation:float 3s ease-in-out infinite; }
-@keyframes float { 0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,-8px)} }
-
-/* nice small responsive */
-@media (max-width:880px){
-  .shop-wrap{ flex-direction:column; align-items:center; }
-  .shop-left{ width:92%; }
-  .shop-right{ width:92%; }
-  .menu-title{ font-size:1.6rem; }
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+body, html {
+  height: 100%;
+  background: linear-gradient(#9be7ff, #bfeaff);
+  overflow: hidden;
+}
+.page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.page.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+button {
+  padding: 12px 24px;
+  margin: 8px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  background: var(--accent);
+}
+button:hover {
+  transform: scale(1.05);
+}
+.menu-title {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  color: #fff;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+}
+.card {
+  background: var(--ui);
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#gameCanvas {
+  background: transparent;
+  display: block;
+  margin: auto;
+  border-radius: 12px;
+  z-index: 1;
+  position: relative;
+}
+#backBtn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--ui);
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+}
+#scoreDisplay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 4px #000;
+  z-index: 2;
 }
 </style>
 </head>
 <body>
 
-<!-- Cinematic intro canvas (bird flies across) -->
-<canvas id="introCanvas" class="intro-canvas"></canvas>
-<div id="logoEl" class="logo">Flappy Deluxe</div>
-
-<!-- Pages -->
-<div id="menuPage" class="page active">
+<!-- INTRO -->
+<div id="introPage" class="page active">
+  <div class="menu-title">🎮 Welcome to Flappy Deluxe!</div>
   <div class="card">
-    <div class="menu-title">Flappy Deluxe — Premium</div>
-    <div style="display:flex;gap:12px;align-items:center;">
-      <button id="playBtn" class="primary-btn">Play</button>
-      <button id="shopBtn" class="secondary-btn">Shop</button>
-      <button id="skinsBtn" class="secondary-btn">Skins</button>
-      <button id="settingsBtn" class="secondary-btn">Settings</button>
-    </div>
-    <div style="display:flex;gap:14px;margin-top:6px;align-items:center;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="coin-icon" id="menuCoinIcon"></div>
-        <div id="menuCoins" style="font-weight:900;color:#062a3c;">0</div>
-      </div>
-      <div id="challengeBox" style="margin-left:auto;color:#0b2540;font-weight:800;">Challenge: —</div>
-    </div>
+    <p>Get ready to flap, collect coins, and complete challenges!</p>
+    <button id="startIntroBtn">Continue</button>
   </div>
 </div>
 
-<!-- Shop -->
-<div id="shopPage" class="page">
-  <div class="card shop-wrap" style="align-items:flex-start;">
-    <div class="shop-left">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <div style="font-weight:900;color:#062a3c;">Store</div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <div class="coin-icon"></div>
-          <div id="shopCoins" style="font-weight:900;color:#062a3c;">0</div>
-        </div>
-      </div>
-      <div class="tab-bar" id="tabBar">
-        <div class="tab active" data-tab="cosmetics">Cosmetics</div>
-        <div class="tab" data-tab="powerups">Power-ups</div>
-      </div>
-      <div id="tabContent"></div>
-      <div style="margin-top:10px;"><button id="shopBack" class="secondary-btn">Back</button></div>
-    </div>
-
-    <div class="shop-right">
-      <div style="font-weight:900;color:#062a3c;">Preview</div>
-      <div id="previewArea" style="height:220px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center;">
-        <div id="previewBox" style="width:180px;height:120px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#062a3c;">Pick item</div>
-      </div>
-      <div style="margin-top:12px;">
-        <div style="font-weight:900;color:#062a3c;">Owned</div>
-        <div id="ownedList" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Skins page -->
-<div id="skinsPage" class="page">
+<!-- MAIN MENU -->
+<div id="menuPage" class="page">
+  <div class="menu-title">Flappy Deluxe</div>
   <div class="card">
-    <div class="menu-title">Skins</div>
-    <div id="skinsGrid" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
-    <div style="margin-top:12px;"><button id="skinsBack2" class="secondary-btn">Back</button></div>
+    <button id="playBtn">Play</button>
+    <button id="storeBtn">Store</button>
+    <button id="settingsBtn">Settings</button>
   </div>
 </div>
 
-<!-- Settings -->
+<!-- STORE -->
+<div id="storePage" class="page">
+  <div class="menu-title">🏪 Coin Store</div>
+  <div class="card">
+    <p>Coins: <span id="coinCount">0</span></p>
+    <p>Buy new skins and upgrades here!</p>
+    <button id="buySkinBtn">Buy Fancy Skin (50 coins)</button>
+  </div>
+  <button id="storeBack">Back</button>
+</div>
+
+<!-- SETTINGS -->
 <div id="settingsPage" class="page">
+  <div class="menu-title">⚙️ Settings</div>
   <div class="card">
-    <div class="menu-title">Settings</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <label>Theme</label>
-      <select id="themeSelect">
-        <option value="day">Day</option>
-        <option value="sunset">Sunset</option>
-        <option value="night">Night</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-      <label>Difficulty</label>
-      <select id="difficultySelect">
-        <option value="easy">Easy</option>
-        <option value="normal" selected>Normal</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-      <label>Music</label>
-      <input type="checkbox" id="musicToggle">
-      <label>Volume</label>
-      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8">
-    </div>
-    <div style="margin-top:12px;"><button id="settingsBack" class="secondary-btn">Back</button></div>
+    <p>Difficulty:</p>
+    <select id="difficultySelect">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
   </div>
+  <button id="settingsBack">Back</button>
 </div>
 
-<!-- Game page -->
+<!-- GAME -->
 <div id="gamePage" class="page">
-  <canvas id="gameCanvas" width="900" height="550"></canvas>
-  <div class="hud" style="left:14px;top:14px;">
-    <div class="score" id="hudScore">0</div>
-    <div class="coins" id="hudCoins"><div class="coin-icon"></div><div id="hudCoinsText">0</div></div>
-  </div>
-  <div style="position:absolute; top:14px; right:14px; display:flex; gap:8px; z-index:50;">
-    <button id="pauseBtn" class="secondary-btn">Pause</button>
-    <button id="backToMenu" class="secondary-btn">Menu</button>
-  </div>
-  <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
-    <div id="tapToStart" style="pointer-events:none; color:white; font-weight:900; text-shadow:0 8px 20px rgba(0,0,0,0.5); font-size:28px; opacity:0.9; z-index:60">Tap / Space to flap</div>
-  </div>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <button id="backBtn">Main Menu</button>
+  <div id="scoreDisplay">0</div>
 </div>
 
 <script>
-/* -----------------------------
-   State and persistent storage
-   ----------------------------- */
-const STORE = {
-  coins: Number(localStorage.getItem('flappy_coins')||0),
-  purchased: JSON.parse(localStorage.getItem('flappy_purchased')||'{}'),
-  settings: JSON.parse(localStorage.getItem('flappy_settings')||'{}')
-};
-STORE.settings = Object.assign({
-  skin: 'yellow', theme: 'day', difficulty: 'normal', volume: 0.8, music: true
-}, STORE.settings);
-
-/* ---------- Utility ---------- */
-function saveStore(){
-  localStorage.setItem('flappy_coins', STORE.coins);
-  localStorage.setItem('flappy_purchased', JSON.stringify(STORE.purchased));
-  localStorage.setItem('flappy_settings', JSON.stringify(STORE.settings));
-  updateMenuCoins();
-  updateShopCoins();
-  updateHUDCoins();
-}
-function fmt(n){ return n.toString(); }
-
-/* ---------- Items for shop ---------- */
-const SKINS = [
-  {id:'yellow', name:'Sunny', color:'#ffd166', price:0},
-  {id:'red', name:'Crimson', color:'#ff7b9c', price:120},
-  {id:'blue', name:'Aqua', color:'#5eead4', price:150},
-  {id:'black', name:'Onyx', color:'#6b7280', price:200}
-];
-const THEMES = [
-  {id:'day', name:'Day', gradient:['#9be7ff','#bfeaff'], price:0},
-  {id:'sunset', name:'Sunset', gradient:['#ffb88c','#ffecd2'], price:120},
-  {id:'night', name:'Night', gradient:['#0f172a','#071230'], price:200}
-];
-const POWERUPS = [
-  {id:'shield', name:'Shield (1 run)', description:'Protects from one hit', price:200},
-  {id:'magnet', name:'Magnet (1 run)', description:'Attracts coins', price:180},
-  {id:'double', name:'Double Coins (1 run)', description:'2× coins for one run', price:220}
-];
-
-/* ---------- DOM references ---------- */
+// --- Pages ---
 const pages = {
+  intro: document.getElementById('introPage'),
   menu: document.getElementById('menuPage'),
-  shop: document.getElementById('shopPage'),
-  skins: document.getElementById('skinsPage'),
+  store: document.getElementById('storePage'),
   settings: document.getElementById('settingsPage'),
   game: document.getElementById('gamePage')
 };
-function showPage(name){
-  Object.values(pages).forEach(p=>p.classList.remove('active'));
+function showPage(name) {
+  Object.values(pages).forEach(p => p.classList.remove('active'));
   pages[name].classList.add('active');
 }
 
-/* ---------- Intro cinematic ---------- */
-const introCanvas = document.getElementById('introCanvas');
-const introCtx = introCanvas.getContext('2d');
-const logoEl = document.getElementById('logoEl');
-introCanvas.width = innerWidth;
-introCanvas.height = innerHeight;
+// --- Navigation ---
+document.getElementById('startIntroBtn').addEventListener('click', () => showPage('menu'));
+document.getElementById('playBtn').addEventListener('click', () => { showPage('game'); startGame(); });
+document.getElementById('storeBtn').addEventListener('click', () => showPage('store'));
+document.getElementById('settingsBtn').addEventListener('click', () => showPage('settings'));
+document.getElementById('settingsBack').addEventListener('click', () => showPage('menu'));
+document.getElementById('storeBack').addEventListener('click', () => showPage('menu'));
+document.getElementById('backBtn').addEventListener('click', () => { showPage('menu'); running=false; });
 
-let introState = { running:false, t:0, birdX:-120, birdY: innerHeight*0.45, speed: 4, raf:null };
-function startIntro(){
-  introState.running = true; introState.t=0; introState.birdX=-200;
-  logoEl.classList.remove('show');
-  introCanvas.width = innerWidth; introCanvas.height = innerHeight;
-  introState.raf = requestAnimationFrame(introLoop);
-}
-function introLoop(ts){
-  introState.t += 1;
-  introState.birdX += introState.speed;
-  introCtx.clearRect(0,0,introCanvas.width,introCanvas.height);
-  // sky gradient
-  const g = introCtx.createLinearGradient(0,0,introCanvas.width,introCanvas.height);
-  g.addColorStop(0, '#8ed1ff'); g.addColorStop(1, '#bfeaff');
-  introCtx.fillStyle = g; introCtx.fillRect(0,0,introCanvas.width,introCanvas.height);
-  // clouds
-  for(let i=0;i<6;i++){
-    const cx = ((i*150 + introState.t*0.6) % (introCanvas.width + 200)) - 100;
-    introCtx.fillStyle = 'rgba(255,255,255,0.9)';
-    introCtx.beginPath(); introCtx.ellipse(cx, 120 + (i%2)*20, 60, 36, 0,0,Math.PI*2); introCtx.fill();
-  }
-  // bird flying
-  drawIntroBird(introCtx, introState.birdX, introState.birdY, Math.sin(introState.t*0.12)*0.4);
-  if(introState.birdX > introCanvas.width*0.55 && !logoEl.classList.contains('show')) {
-    logoEl.classList.add('show');
-  }
-  if(introState.birdX > introCanvas.width + 120){
-    // end intro: fade out canvas and show menu
-    cancelAnimationFrame(introState.raf); introState.running=false;
-    logoEl.classList.remove('show');
-    introCtx.clearRect(0,0,introCanvas.width,introCanvas.height);
-    // keep small flicker before finishing
-  } else {
-    introState.raf = requestAnimationFrame(introLoop);
-  }
-}
-function drawIntroBird(ctx,x,y,tilt){
-  ctx.save();
-  ctx.translate(x,y);
-  ctx.rotate(tilt*0.6);
-  // body
-  ctx.fillStyle = '#ffd166';
-  ctx.beginPath(); ctx.ellipse(0,0,24,20,0,0,Math.PI*2); ctx.fill();
-  // eye
-  ctx.fillStyle='#111'; ctx.beginPath(); ctx.arc(-6,-2,3,0,Math.PI*2); ctx.fill();
-  // beak
-  ctx.fillStyle='#ff6b6b'; ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(28,-6); ctx.lineTo(28,6); ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-/* ---------- Menu / HUD updates ---------- */
-const menuCoinsEl = document.getElementById('menuCoins');
-const shopCoinsEl = document.getElementById('shopCoins');
-const hudCoinsText = document.getElementById('hudCoinsText');
-const hudScoreEl = document.getElementById('hudScore');
-const challengeBox = document.getElementById('challengeBox');
-
-function updateMenuCoins(){ menuCoinsEl.textContent = fmt(STORE.coins); }
-function updateShopCoins(){ shopCoinsEl.textContent = fmt(STORE.coins); }
-function updateHUDCoins(){ hudCoinsText.textContent = fmt(STORE.coins); }
-
-updateMenuCoins(); updateShopCoins(); updateHUDCoins();
-
-/* ---------- Shop UI logic (glossy) ---------- */
-const tabBar = document.getElementById('tabBar');
-const tabContent = document.getElementById('tabContent');
-const previewBox = document.getElementById('previewBox');
-const ownedList = document.getElementById('ownedList');
-
-function renderTab(tab='cosmetics'){
-  tabContent.innerHTML = '';
-  if(tab==='cosmetics'){
-    // skins
-    const title = document.createElement('div'); title.style.fontWeight='900'; title.style.marginBottom='8px'; title.textContent='Skins'; tabContent.appendChild(title);
-    SKINS.forEach(s=>{
-      const card = document.createElement('div'); card.className='item-card';
-      const preview = document.createElement('div'); preview.className='item-preview'; preview.style.background=s.color; preview.textContent=s.name[0];
-      const meta = document.createElement('div'); meta.className='item-meta';
-      meta.innerHTML = `<div class="item-title">${s.name}</div><div class="item-price">${s.price>0 ? s.price+' 🪙' : 'Free'}</div>`;
-      const right = document.createElement('div');
-      if(STORE.purchased['skin_'+s.id] || s.price===0){
-        const owned = document.createElement('div'); owned.className='owned-badge'; owned.textContent='Owned'; right.appendChild(owned);
-      } else {
-        const buy = document.createElement('button'); buy.className='buy-btn'; buy.textContent = 'Buy';
-        buy.addEventListener('click', ()=>{
-          if(STORE.coins >= s.price){
-            STORE.coins -= s.price; STORE.purchased['skin_'+s.id] = true; STORE.settings.skin = s.id; saveStore(); renderTab('cosmetics'); updateOwnedList();
-            alert(`Purchased ${s.name} skin!`);
-          } else alert('Not enough coins');
-        });
-        right.appendChild(buy);
-      }
-      card.appendChild(preview); card.appendChild(meta); card.appendChild(right);
-      // preview on hover
-      card.addEventListener('mouseenter', ()=>{ previewBox.style.background = s.color; previewBox.textContent = s.name; });
-      card.addEventListener('mouseleave', ()=>{ previewBox.style.background=''; previewBox.textContent='Pick item'; });
-      tabContent.appendChild(card);
-    });
-    // themes below
-    const ttitle = document.createElement('div'); ttitle.style.fontWeight='900'; ttitle.style.margin='12px 0 6px 0'; ttitle.textContent='Themes'; tabContent.appendChild(ttitle);
-    THEMES.forEach(t=>{
-      const card = document.createElement('div'); card.className='item-card';
-      const preview = document.createElement('div'); preview.className='item-preview';
-      preview.style.background = `linear-gradient(180deg,${t.gradient[0]},${t.gradient[1]})`;
-      const meta = document.createElement('div'); meta.className='item-meta';
-      meta.innerHTML = `<div class="item-title">${t.name}</div><div class="item-price">${t.price>0?t.price+' 🪙':'Free'}</div>`;
-      const right = document.createElement('div');
-      if(STORE.purchased['theme_'+t.id] || t.price===0){
-        const owned = document.createElement('div'); owned.className='owned-badge'; owned.textContent='Owned'; right.appendChild(owned);
-      } else {
-        const buy = document.createElement('button'); buy.className='buy-btn'; buy.textContent='Buy';
-        buy.addEventListener('click', ()=>{
-          if(STORE.coins >= t.price){
-            STORE.coins -= t.price; STORE.purchased['theme_'+t.id] = true; STORE.settings.theme = t.id; saveStore(); renderTab('cosmetics'); updateOwnedList();
-            alert(`Purchased ${t.name} theme!`);
-          } else alert('Not enough coins');
-        });
-        right.appendChild(buy);
-      }
-      card.appendChild(preview); card.appendChild(meta); card.appendChild(right);
-      card.addEventListener('mouseenter', ()=>{ previewBox.style.background = `linear-gradient(180deg,${t.gradient[0]},${t.gradient[1]})`; previewBox.textContent = t.name; });
-      card.addEventListener('mouseleave', ()=>{ previewBox.style.background=''; previewBox.textContent='Pick item'; });
-      tabContent.appendChild(card);
-    });
-  } else {
-    // power-ups
-    const title = document.createElement('div'); title.style.fontWeight='900'; title.style.marginBottom='8px'; title.textContent='Power-ups'; tabContent.appendChild(title);
-    POWERUPS.forEach(p=>{
-      const card = document.createElement('div'); card.className='item-card';
-      const preview = document.createElement('div'); preview.className='item-preview'; preview.style.background='#fff9e6'; preview.textContent=p.name[0];
-      const meta = document.createElement('div'); meta.className='item-meta';
-      meta.innerHTML = `<div class="item-title">${p.name}</div><div style="color:${'#444'}">${p.description}</div><div class="item-price">${p.price} 🪙</div>`;
-      const right = document.createElement('div');
-      const buy = document.createElement('button'); buy.className='buy-btn'; buy.textContent='Buy';
-      buy.addEventListener('click', ()=>{
-        if(STORE.coins >= p.price){
-          STORE.coins -= p.price;
-          STORE.purchased['power_'+p.id] = (STORE.purchased['power_'+p.id] || 0) + 1; // count of uses
-          saveStore(); updateOwnedList(); alert(`Purchased ${p.name}!`); renderTab('powerups');
-        } else alert('Not enough coins');
-      });
-      right.appendChild(buy);
-      card.appendChild(preview); card.appendChild(meta); card.appendChild(right);
-      card.addEventListener('mouseenter', ()=>{ previewBox.style.background='#fff9e6'; previewBox.textContent=p.name; });
-      card.addEventListener('mouseleave', ()=>{ previewBox.style.background=''; previewBox.textContent='Pick item'; });
-      tabContent.appendChild(card);
-    });
-  }
-}
-tabBar.addEventListener('click', e=>{
-  const tab = e.target.closest('.tab');
-  if(!tab) return;
-  tabBar.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  tab.classList.add('active');
-  renderTab(tab.dataset.tab);
-});
-
-/* Owned list */
-function updateOwnedList(){
-  ownedList.innerHTML = '';
-  // skins owned
-  SKINS.forEach(s=>{
-    if(STORE.purchased['skin_'+s.id] || s.price===0){
-      const el = document.createElement('div'); el.style.padding='6px 8px'; el.style.background='linear-gradient(180deg,#fff,#f2f2f2)'; el.style.borderRadius='8px'; el.textContent = s.name;
-      ownedList.appendChild(el);
-    }
-  });
-  THEMES.forEach(t=>{
-    if(STORE.purchased['theme_'+t.id] || t.price===0){
-      const el = document.createElement('div'); el.style.padding='6px 8px'; el.style.background='linear-gradient(180deg,#fff,#f2f2f2)'; el.style.borderRadius='8px'; el.textContent = t.name;
-      ownedList.appendChild(el);
-    }
-  });
-  Object.keys(STORE.purchased).forEach(k=>{
-    if(k.startsWith('power_')){
-      const id = k.replace('power_','');
-      const count = STORE.purchased[k] || 0;
-      if(count>0){
-        const p = POWERUPS.find(pp=>pp.id===id);
-        const el = document.createElement('div'); el.style.padding='6px 8px'; el.style.background='linear-gradient(180deg,#fff,#fef7e0)'; el.style.borderRadius='8px';
-        el.textContent = `${p.name} ×${count}`;
-        ownedList.appendChild(el);
-      }
-    }
-  });
-}
-
-renderTab('cosmetics');
-updateOwnedList();
-
-/* ---------- Skins page (quick select) ---------- */
-const skinsGrid = document.getElementById('skinsGrid');
-function populateSkinsGrid(){
-  skinsGrid.innerHTML='';
-  SKINS.forEach(s=>{
-    const b = document.createElement('div'); b.style.width='84px'; b.style.height='84px'; b.style.borderRadius='12px'; b.style.background=s.color; b.style.display='flex'; b.style.alignItems='center'; b.style.justifyContent='center'; b.style.fontWeight='900'; b.style.cursor='pointer';
-    b.textContent = s.name[0];
-    b.addEventListener('click', ()=>{ if(STORE.purchased['skin_'+s.id] || s.price===0){ STORE.settings.skin = s.id; saveStore(); alert('Skin applied'); updateUI(); } else alert('Buy skin in store'); });
-    skinsGrid.appendChild(b);
-  });
-}
-populateSkinsGrid();
-
-/* ---------- Settings page init ---------- */
-document.getElementById('themeSelect').value = STORE.settings.theme;
-document.getElementById('difficultySelect').value = STORE.settings.difficulty;
-document.getElementById('musicToggle').checked = STORE.settings.music;
-document.getElementById('volumeSlider').value = STORE.settings.volume;
-
-document.getElementById('themeSelect').addEventListener('change',(e)=>{ STORE.settings.theme=e.target.value; saveStore(); });
-document.getElementById('difficultySelect').addEventListener('change',(e)=>{ STORE.settings.difficulty=e.target.value; saveStore(); });
-document.getElementById('musicToggle').addEventListener('change', (e)=>{ STORE.settings.music = e.target.checked; saveStore(); });
-document.getElementById('volumeSlider').addEventListener('input', (e)=>{ STORE.settings.volume = Number(e.target.value); saveStore(); });
-
-/* ---------- Game engine (canvas) ---------- */
+// --- Game Variables ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 900; canvas.height = 550;
-const W = canvas.width, H = canvas.height;
+let width = canvas.width, height = canvas.height;
+let bird, pipes, frameCount, running = false, score = 0, coins = 0;
+let gravity = 0.45; // stronger physics
+let difficulty = 'normal';
 
-let game = {
-  running:false, bird:null, pipes:[], frame:0, score:0, paused:false, raf: null, coinsThisRun:0,
-  powerActive: { shield:false, magnet:false, double:false },
-};
-
-function resetRun(){
-  game.bird = { x: W*0.27, y: H*0.5, vy:0, r:16, frame:0 };
-  game.pipes = [];
-  game.frame = 0;
-  game.score = 0;
-  game.coinsThisRun = 0;
-  game.powerActive = { shield:false, magnet:false, double:false };
-  hudScoreEl.textContent = '0';
-  updateHUDCoins();
-  // apply theme if chosen
-  applyTheme(STORE.settings.theme);
+// --- Game Functions ---
+function resetGame() {
+  bird = { x: width / 4, y: height / 2, vy: 0, r: 16 };
+  pipes = [];
+  frameCount = 0;
+  score = 0;
+  document.getElementById('scoreDisplay').textContent = score;
 }
-function applyTheme(t){
-  const theme = THEMES.find(x=>x.id===t) || THEMES[0];
-  document.documentElement.style.setProperty('--bg-top', theme.gradient[0]);
-  document.documentElement.style.setProperty('--bg-bottom', theme.gradient[1]);
+function spawnPipe() {
+  const gap = 130;
+  const top = 60 + Math.random() * (height - gap - 120);
+  pipes.push({ x: width, top, gap, passed: false });
 }
+function flap() { bird.vy = -8; }
+window.addEventListener('keydown', e => { if (e.code === 'Space') flap(); });
+canvas.addEventListener('mousedown', flap);
 
-/* Input */
-function flap(){
-  if(!game.running) startRun();
-  game.bird.vy = Math.max(game.bird.vy, -10);
-  game.bird.vy += -9;
-  if(game.bird.vy < -13) game.bird.vy = -13;
-  // small sound
-  // beep(880,0.04);
+function startGame() {
+  resetGame();
+  running = true;
+  requestAnimationFrame(gameLoop);
 }
-window.addEventListener('keydown', e=>{ if(e.code==='Space'){ e.preventDefault(); flap(); }});
-canvas.addEventListener('mousedown', ()=>{ flap(); });
-canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); flap(); }, {passive:false});
-
-/* spawn pipe */
-function spawnPipe(){
-  const baseGap = (STORE.settings.difficulty==='easy')?170:(STORE.settings.difficulty==='hard')?120:140;
-  // dynamic difficulty: shrink gap slightly with score
-  const gap = Math.max(110, baseGap - Math.floor(game.score/6));
-  const top = 60 + Math.random()*(H - gap - 160);
-  game.pipes.push({ x: W+20, top, gap, passed:false, swaySeed: Math.random()*10 });
+function gameLoop() {
+  if (!running) return;
+  frameCount++;
+  if (frameCount % 100 === 0) spawnPipe();
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
 }
-
-/* collision */
-function collides(pipe){
-  const b = game.bird;
-  if(b.x+b.r > pipe.x && b.x-b.r < pipe.x+60){
-    if(b.y-b.r < pipe.top || b.y+b.r > pipe.top+pipe.gap) return true;
-  }
-  return false;
-}
-
-/* start/stop */
-function startRun(){
-  if(game.raf) cancelAnimationFrame(game.raf);
-  resetRun();
-  game.running = true; game.paused = false;
-  game.raf = requestAnimationFrame(loop);
-}
-function stopRun(){
-  game.running = false;
-  if(game.raf) cancelAnimationFrame(game.raf);
-  // reward coins
-  const gain = Math.floor(game.score / 2) + game.coinsThisRun * (game.powerActive.double?2:1);
-  STORE.coins += gain; saveStore();
-  alert(`Run ended. Score: ${game.score}\nCoins gained: ${gain}`);
-}
-
-/* pause */
-document.getElementById('pauseBtn').addEventListener('click', ()=>{
-  if(!game.running) return;
-  game.paused = !game.paused;
-  if(game.paused){ if(game.raf) cancelAnimationFrame(game.raf); document.getElementById('pauseBtn').textContent='Resume'; } 
-  else { document.getElementById('pauseBtn').textContent='Pause'; game.raf = requestAnimationFrame(loop); }
-});
-document.getElementById('backToMenu').addEventListener('click', ()=>{ if(game.running) stopRun(); showPage('menu'); });
-
-/* main loop */
-function loop(){
-  if(!game.running) return;
-  if(game.paused) return;
-  game.frame++;
-  // spawn rate depends on difficulty
-  const spawnEvery = (STORE.settings.difficulty==='hard')?76:(STORE.settings.difficulty==='easy')?110:90;
-  if(game.frame % spawnEvery === 0) spawnPipe();
-
-  // physics
-  game.bird.vy += 0.5; game.bird.vy = Math.min(game.bird.vy, 14); game.bird.y += game.bird.vy;
-
-  // move pipes
-  const baseSpeed = (STORE.settings.difficulty==='hard')?4.0:(STORE.settings.difficulty==='easy')?2.5:3.2;
-  const speed = baseSpeed + game.score*0.02; // slight speed ramp
-  for(const p of game.pipes){
-    p.x -= speed;
-    // sway effect
-    p.x += Math.sin((game.frame*0.01)+p.swaySeed)*0.0; // minimal horizontal sway (visual)
-    if(!p.passed && p.x+60 < game.bird.x){ p.passed = true; game.score++; hudScoreEl.textContent = game.score; 
-      // coin on passing (small)
-      game.coinsThisRun += 1 * (game.powerActive.double?2:1);
-      updateHUDCoins();
+function update() {
+  bird.vy += gravity;
+  bird.y += bird.vy;
+  pipes.forEach(p => {
+    p.x -= 2;
+    if (!p.passed && p.x + 60 < bird.x) {
+      p.passed = true;
+      score++;
+      coins++;
+      document.getElementById('scoreDisplay').textContent = score;
+      document.getElementById('coinCount').textContent = coins;
     }
-  }
-  // filter
-  game.pipes = game.pipes.filter(p=>p.x > -100);
-
-  // check collisions
-  if(game.bird.y + game.bird.r > H-24 || game.bird.y - game.bird.r < 0){
-    // hit ground/ceiling
-    if(game.powerActive.shield){ game.powerActive.shield=false; alert('Shield absorbed a hit!'); }
-    else { stopRun(); game.running=false; return; }
-  }
-  for(const p of game.pipes){
-    if(collides(p)){
-      if(game.powerActive.shield){ game.powerActive.shield=false; alert('Shield absorbed a hit!'); p.passed=true; }
-      else { stopRun(); game.running=false; return; }
-    }
-  }
-
-  drawGame();
-  game.raf = requestAnimationFrame(loop);
-}
-
-/* draw game */
-function drawGame(){
-  ctx.clearRect(0,0,W,H);
-  // background gradient
-  const theme = THEMES.find(t=>t.id === STORE.settings.theme) || THEMES[0];
-  const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,theme.gradient[0]); g.addColorStop(1,theme.gradient[1]);
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-  // moving clouds
-  for(let i=0;i<8;i++){
-    const cx = (i*200 + game.frame*0.4) % (W + 200) - 100;
-    ctx.beginPath(); ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.ellipse(cx, 90 + (i%2)*18, 64, 38, 0,0,Math.PI*2); ctx.fill();
-  }
-
-  // pipes fancy (rounded + gradient + slight sway)
-  for(let i=0;i<game.pipes.length;i++){
-    const p = game.pipes[i];
-    const pipeWidth = 60;
-    const radius = 10;
-    const sway = Math.sin((game.frame*0.03) + i) * 4;
-    const x = p.x + sway;
-    const topGrad = ctx.createLinearGradient(x, 0, x+pipeWidth, p.top);
-    topGrad.addColorStop(0, '#2b9a77'); topGrad.addColorStop(1, '#237a5f');
-    const bottomGrad = ctx.createLinearGradient(x, p.top+p.gap, x+pipeWidth, H);
-    bottomGrad.addColorStop(0, '#2b9a77'); bottomGrad.addColorStop(1, '#237a5f');
-
-    // top pipe (rounded)
-    ctx.fillStyle = topGrad;
-    ctx.beginPath();
-    ctx.moveTo(x, p.top);
-    ctx.lineTo(x, radius);
-    ctx.quadraticCurveTo(x, 0, x+radius, 0);
-    ctx.lineTo(x+pipeWidth-radius, 0);
-    ctx.quadraticCurveTo(x+pipeWidth, 0, x+pipeWidth, radius);
-    ctx.lineTo(x+pipeWidth, p.top);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#1f6c50'; ctx.lineWidth=2; ctx.stroke();
-
-    // bottom pipe (rounded)
-    const bottomTop = p.top + p.gap;
-    const bottomHeight = H - (bottomTop + 24);
-    ctx.fillStyle = bottomGrad;
-    ctx.beginPath();
-    ctx.moveTo(x, H-24);
-    ctx.lineTo(x, H-24 - bottomHeight + radius);
-    ctx.quadraticCurveTo(x, H-24 - bottomHeight, x+radius, H-24 - bottomHeight);
-    ctx.lineTo(x+pipeWidth-radius, H-24 - bottomHeight);
-    ctx.quadraticCurveTo(x+pipeWidth, H-24 - bottomHeight, x+pipeWidth, H-24 - bottomHeight + radius);
-    ctx.lineTo(x+pipeWidth, H-24);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#1f6c50'; ctx.lineWidth=2; ctx.stroke();
-
-    // small coin spawn (random occasionally) - draw coin visual if present
-    // (we keep coins abstract: coins awarded when passing)
-  }
-
-  // ground
-  ctx.fillStyle = '#6fcf97'; ctx.fillRect(0,H-24,W,24);
-
-  // bird (animated wing)
-  const skin = SKINS.find(s => s.id === STORE.settings.skin) || SKINS[0];
-  const tilt = Math.max(-0.8, Math.min(0.8, game.bird.vy/12));
-  ctx.save(); ctx.translate(game.bird.x, game.bird.y); ctx.rotate(tilt*0.5);
-  // body
-  ctx.beginPath(); ctx.ellipse(0,0,game.bird.r, game.bird.r*0.85, 0,0,Math.PI*2); ctx.fillStyle = skin.color; ctx.fill();
-  // eye
-  ctx.beginPath(); ctx.arc(-5,-2,3,0,Math.PI*2); ctx.fillStyle = '#111'; ctx.fill();
-  // beak
-  ctx.beginPath(); ctx.moveTo(game.bird.r-2,0); ctx.lineTo(game.bird.r+12,-5); ctx.lineTo(game.bird.r+12,6); ctx.closePath(); ctx.fillStyle = '#ff6b6b'; ctx.fill();
-  ctx.restore();
-
-  // HUD (canvas overlay updated)
-  hudScoreEl.textContent = fmt(game.score);
-  // coins shown from store
-  hudCoinsText.textContent = fmt(STORE.coins + game.coinsThisRun);
-}
-
-/* ---------- Challenges (example) ---------- */
-const ALL_CHALLENGES = [
-  { id:'c1', text:'Pass 10 pipes', goal:10, reward:80 },
-  { id:'c2', text:'Score 20', goal:20, reward:150 },
-  { id:'c3', text:'Collect 10 coins in one run', goal:10, reward:120 }
-];
-let activeChallenge = ALL_CHALLENGES[0];
-function setRandomChallenge(){
-  activeChallenge = ALL_CHALLENGES[Math.floor(Math.random()*ALL_CHALLENGES.length)];
-  challengeBox.textContent = 'Challenge: ' + activeChallenge.text;
-}
-setRandomChallenge();
-
-/* check challenge on pipe pass */
-function checkChallengeProgress(){
-  if(!activeChallenge) return;
-  if(activeChallenge.id === 'c1'){
-    if(game.score >= activeChallenge.goal){
-      STORE.coins += activeChallenge.reward; saveStore();
-      alert(`Challenge complete! +${activeChallenge.reward} coins`);
-      setRandomChallenge();
-    }
-  } else if(activeChallenge.id === 'c2'){
-    if(game.score >= activeChallenge.goal){
-      STORE.coins += activeChallenge.reward; saveStore();
-      alert(`Challenge complete! +${activeChallenge.reward} coins`);
-      setRandomChallenge();
-    }
-  } else if(activeChallenge.id === 'c3'){
-    if(game.coinsThisRun >= activeChallenge.goal){
-      STORE.coins += activeChallenge.reward; saveStore();
-      alert(`Challenge complete! +${activeChallenge.reward} coins`);
-      setRandomChallenge();
+  });
+  pipes = pipes.filter(p => p.x > -60);
+  if (bird.y + bird.r > height - 24) gameOver();
+  for (const p of pipes) {
+    if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + 60) {
+      if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap) gameOver();
     }
   }
 }
-
-/* ---------- helpers ---------- */
-function fmt(n){ return n.toString(); }
-function updateHUDCoins(){ hudCoinsText.textContent = fmt(STORE.coins + game.coinsThisRun); }
-function updateMenuCoins(){ document.getElementById('menuCoins').textContent = fmt(STORE.coins); }
-
-/* ---------- Shop & Menu wiring ---------- */
-document.getElementById('playBtn').addEventListener('click', ()=>{
-  showPage('game'); // start intro cinematic then game ready
-  if(!introState.running) startIntro(); // cinematic fires in background
-  // reveal intro overlay "Tap to start" visible until first flap
-  resetRun(); // create a ready state
-});
-document.getElementById('shopBtn').addEventListener('click', ()=>{ showPage('shop'); renderTab('cosmetics'); updateOwnedList(); updateShopCoins(); });
-document.getElementById('skinsBtn').addEventListener('click', ()=>{ showPage('skins'); populateSkinsGrid(); });
-document.getElementById('settingsBtn').addEventListener('click', ()=>{ showPage('settings'); });
-
-document.getElementById('shopBack').addEventListener('click', ()=>{ showPage('menu'); });
-document.getElementById('skinsBack2').addEventListener('click', ()=>{ showPage('menu'); });
-document.getElementById('settingsBack').addEventListener('click', ()=>{ showPage('menu'); });
-
-/* Initialize small UI state */
-updateMenuCoins();
-updateShopCoins();
-updateHUDCoins();
-updateOwnedList();
-renderTab('cosmetics');
-
-/* window resize for intro canvas */
-window.addEventListener('resize', ()=>{ introCanvas.width = innerWidth; introCanvas.height = innerHeight; });
-
-/* helper: when passing a pipe event, call: */
-function onPipePassed(){
-  checkChallengeProgress();
-  updateHUDCoins();
+function draw() {
+  ctx.clearRect(0,0,width,height);
+  ctx.fillStyle = "#9be7ff";
+  ctx.fillRect(0,0,width,height);
+  ctx.fillStyle = "#2b9a77";
+  pipes.forEach(p => {
+    ctx.fillRect(p.x,0,60,p.top);
+    ctx.fillRect(p.x,p.top+p.gap,60,height-(p.top+p.gap)-24);
+  });
+  ctx.fillStyle = "#6fcf97";
+  ctx.fillRect(0,height-24,width,24);
+  ctx.beginPath();
+  ctx.arc(bird.x,bird.y,bird.r,0,Math.PI*2);
+  ctx.fillStyle = "#ffd166";
+  ctx.fill();
 }
-
-/* quick demo: increment coin when user presses 'C' (debug) */
-window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='c'){ STORE.coins+=10; saveStore(); alert('Debug: +10 coins'); } });
+function gameOver() {
+  running = false;
+  alert(`Game Over! Score: ${score}`);
+  showPage('menu');
+}
 </script>
 </body>
 </html>
